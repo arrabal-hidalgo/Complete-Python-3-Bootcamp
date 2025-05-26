@@ -264,3 +264,6 @@ old/
 
 # Local venv
 .segittur-commons_venv
+
+# Pypirc file
+.pypirc
