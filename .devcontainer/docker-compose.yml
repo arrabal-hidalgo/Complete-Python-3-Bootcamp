@@ -1,0 +1,17 @@
+services:
+
+  app:
+    container_name: commons-dev
+    build:
+      context: ../
+      dockerfile: .devcontainer/Dockerfile
+    volumes:
+      - ..:${WORKSPACE_FOLDER}/
+    env_file:
+      - .env
+    networks:
+      - avc_network
+
+networks:
+  avc_network:
+    external: true
