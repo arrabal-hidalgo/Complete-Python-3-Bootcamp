@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.milvus import MilvusHandler
+from segittur_commons.app.services.milvus import MilvusHandler
 
 
 class TestMilvusHandler:

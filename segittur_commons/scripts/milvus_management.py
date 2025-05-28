@@ -2,7 +2,11 @@ import json
 
 import typer
 
-from app.services.milvus import DEFAULT_COLLECTION, DEFAULT_DATABASE, MilvusHandler
+from segittur_commons.app.services.milvus import (
+    DEFAULT_COLLECTION,
+    DEFAULT_DATABASE,
+    MilvusHandler,
+)
 
 cli = typer.Typer()
 

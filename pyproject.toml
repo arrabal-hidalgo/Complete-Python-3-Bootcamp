@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "segittur-commons"
-version = "0.1.0"
+version = "0.1.1"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
   { name = "Sofía Cerdá Muñoz", email = "sofia.cerda@sngular.com" }
