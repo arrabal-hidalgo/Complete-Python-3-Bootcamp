@@ -1,6 +1,29 @@
 # Segittur Commons
 
+## Installation with Docker (Recommended)
 
+### Dependencies
+
+Segittur AVC project development environment is dockerized, so you need to install `docker` and `docker compose` if you want run the project throught containers. To know how to open project throught DevContainer see [DevContainer section](#open-in-devcontainer).
+
+### Install
+
+1.- Copy `.env.template` into `.devcontainer` as `.env` and set the variable properly according to environment.
+```bash
+cp .env.template .devcontainer/.env
+```
+2.- Go to `.devcontainer`.
+```bash
+cd .devcontainer
+```
+3.- Build the images.
+```bash
+docker compose build
+```
+4.- Run the whole project.
+```bash
+docker compose up -d
+```
 
 ## Build project as PyPI package
 

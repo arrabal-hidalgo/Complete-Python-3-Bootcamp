@@ -10,8 +10,6 @@
 	"features": {
 		"ghcr.io/devcontainers/features/git:1": {}
 	},
-	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip install .",
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.
