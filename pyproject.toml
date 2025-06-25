@@ -4,10 +4,11 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "segittur-commons"
-version = "0.2"
+version = "0.2.3"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
-  { name = "Sofía Cerdá Muñoz", email = "sofia.cerda@sngular.com" }
+  { name = "Alejandro Arrabal Hidalgo", email = "alejandro.arrabal@sngular.com" },
+  { name = "Sofía Cerdá Muñoz", email = "sofia.cerda@sngular.com" },  
 ]
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
