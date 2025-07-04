@@ -40,22 +40,22 @@ class MilvusHandler:
 
     def _split_text(
         self,
-        texts: Union[list[str], list[Document]],
+        texts: Union[List[str], List[Document]],
         text_splitter_fn: Type[TS],
-        metadatas: list[dict] = None,
+        metadatas: List[dict] = None,
         **kwargs_splitter,
-    ) -> list[Document]:
+    ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
         if isinstance(texts[0], str):
             splitted_docs = text_splitter.create_documents(texts, metadatas)
-        else:  # list[Document]
+        else:  # List[Document]
             splitted_docs = text_splitter.split_documents(texts)
         return splitted_docs
 
     def create_vector_store_from_texts(
         self,
-        texts: Union[list[str], list[Document]],
-        metadatas: list[dict] = None,
+        texts: Union[List[str], List[Document]],
+        metadatas: List[dict] = None,
         collection_name: str = DEFAULT_COLLECTION,
         db_name: str = DEFAULT_DATABASE,
         text_splitter_fn: Type[TS] = None,
@@ -118,7 +118,7 @@ class MilvusHandler:
         vector_store: Milvus = None,
         kwargs_search: dict = {},
         kwargs_store: dict = {},
-    ) -> list[Document]:
+    ) -> List[Document]:
         search_method: Callable[[str, dict], List[tuple[Document, float]]] = getattr(
             vector_store or self.get_vector_store(**kwargs_store), search_fun
         )
