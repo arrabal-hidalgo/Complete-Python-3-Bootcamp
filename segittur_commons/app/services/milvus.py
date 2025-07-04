@@ -1,5 +1,5 @@
 import os
-from typing import Type, Union
+from typing import Callable, List, Type, Union
 
 from langchain_core.documents import Document
 from langchain_milvus import Milvus
@@ -119,7 +119,9 @@ class MilvusHandler:
         kwargs_search: dict = {},
         kwargs_store: dict = {},
     ) -> list[Document]:
-        search_method = getattr(vector_store or self.get_vector_store(**kwargs_store), search_fun)
+        search_method: Callable[[str, dict], List[tuple[Document, float]]] = getattr(
+            vector_store or self.get_vector_store(**kwargs_store), search_fun
+        )
         docs_scores = search_method(query, **kwargs_search)
         print(docs_scores)
 
