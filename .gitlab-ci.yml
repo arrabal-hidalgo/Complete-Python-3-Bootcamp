@@ -43,7 +43,7 @@ dependencies_security:
     - docker version
     - docker build --target commons -t $IMAGE_NAME:$TEST_IMAGE_TAG -f .devcontainer/Dockerfile .
   script:
-    - docker run --env-file .env_template --rm $IMAGE_NAME:$TEST_IMAGE_TAG pip-audit --cache-dir /tmp
+    - docker run --env-file .env_template --rm $IMAGE_NAME:$TEST_IMAGE_TAG /usr/local/segittur_commons/.venv/bin/pip-audit --cache-dir /tmp
   only:
     - branches
     - merge_requests
