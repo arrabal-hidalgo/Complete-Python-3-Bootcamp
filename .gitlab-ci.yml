@@ -5,6 +5,11 @@ stages:
   - analysis
   - deploy
 
+variables:
+  IMAGE_NAME: "segittur-commons"
+  DOCKER_DRIVER: overlay2
+  TEST_IMAGE_TAG: test-$CI_COMMIT_SHORT_SHA
+
 code_quality:
   stage: analysis
   image: python:3.11
