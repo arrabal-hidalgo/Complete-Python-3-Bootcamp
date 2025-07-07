@@ -11,9 +11,9 @@ code_quality:
   before_script:
     - pip install ruff mypy black types-requests
   script:
-    - black --check app
-    - ruff check app
-    - mypy app 
+    - black --check segittur_commons/app
+    - ruff check segittur_commons/app
+    - mypy segittur_commons/app 
   only:
     - branches
     - merge_requests
@@ -24,7 +24,7 @@ code_security:
   before_script:
     - pip install bandit
   script:
-    - bandit -r app
+    - bandit -r segittur_commons/app
   only:
     - branches
     - merge_requests
