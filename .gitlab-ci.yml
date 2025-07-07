@@ -36,7 +36,7 @@ dependencies_security:
     - dockerd-entrypoint.sh & sleep 10
     - export DOCKER_HOST=unix:///run/user/1000/docker.sock
     - docker version
-    - docker build --build-arg GITLAB_ACCESS_TOKEN=$GITLAB_ACCESS_TOKEN --build-arg GITLAB_ACCESS_USER=$GITLAB_ACCESS_USER --target avc-test -t $IMAGE_NAME:$TEST_IMAGE_TAG -f .devcontainer/Dockerfile .
+    - docker build --target commons -t $IMAGE_NAME:$TEST_IMAGE_TAG -f segittur_commons/.devcontainer/Dockerfile .
   script:
     - docker run --env-file .env.template --rm $IMAGE_NAME:$TEST_IMAGE_TAG pip-audit --cache-dir /tmp
   only:
