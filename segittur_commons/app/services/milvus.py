@@ -130,6 +130,7 @@ class MilvusHandler:
         db_name: str = DEFAULT_DATABASE,
         text_splitter_fn: Type[TS] = None,
         kwargs_splitter: dict = {},
+        **kwargs_store: dict,
     ) -> List[str]:
         """
         Adds documents to an existing collection in Milvus.
@@ -160,7 +161,7 @@ class MilvusHandler:
             return []
 
         vector_store = self.get_vector_store(collection_name=collection_name, db_name=db_name)
-        return vector_store.add_documents(documents)
+        return vector_store.add_documents(documents, auto_id=kwargs_store.pop("auto_id", True))
 
     def get_vector_store(
         self, collection_name: str = DEFAULT_COLLECTION, db_name: str = DEFAULT_DATABASE
