@@ -18,13 +18,16 @@ class MilvusHandler:
 
     def __init__(
         self,
-        uri: str = "",
-        token: str = "",
+        uri: str,
+        token: str | None = None,
         model_embeddings: str = "text-embedding-3-small",
         **kwargs,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
-        self.token = token
+        if token is None:
+            self.token = os.getenv("MILVUS_TOKEN", "")
+        else:
+            self.token = token
         self.client = MilvusClient(uri=self.uri, token=self.token, **kwargs)
         self.embeddings_fn = AzureOpenAIEmbeddings(model=model_embeddings)
 
