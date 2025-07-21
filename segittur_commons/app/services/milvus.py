@@ -160,17 +160,23 @@ class MilvusHandler:
         if not documents:
             return []
 
-        vector_store = self.get_vector_store(collection_name=collection_name, db_name=db_name)
-        return vector_store.add_documents(documents, auto_id=kwargs_store.pop("auto_id", True))
+        vector_store = self.get_vector_store(
+            collection_name=collection_name, db_name=db_name, **kwargs_store
+        )
+        return vector_store.add_documents(documents)
 
     def get_vector_store(
-        self, collection_name: str = DEFAULT_COLLECTION, db_name: str = DEFAULT_DATABASE
+        self,
+        collection_name: str = DEFAULT_COLLECTION,
+        db_name: str = DEFAULT_DATABASE,
+        **kwargs_store: dict,
     ) -> Milvus:
         return Milvus(
             embedding_function=self.embeddings_fn,
             collection_name=collection_name,
             connection_args=self._connection_args(db_name),
             index_params=self.client.describe_index(DEFAULT_COLLECTION, "vector"),
+            **kwargs_store,
         )
 
     def exists_collection(self, collection_name: str = DEFAULT_COLLECTION):
