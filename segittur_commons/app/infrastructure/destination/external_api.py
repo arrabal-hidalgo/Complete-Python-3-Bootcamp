@@ -11,17 +11,9 @@ class ExternalApi(ABC):
 
     base_url: str = ""
 
-    def __init__(self):
-        self.api_key = self._get_api_key()
+    def __init__(self, api_key):
+        self.api_key = api_key
         self.headers = self._get_headers()
-
-    @abstractmethod
-    def _get_api_key(self) -> str:
-        """
-        Returns the API key for the external service.
-        This method should be implemented by subclasses to provide the actual API key.
-        """
-        raise NotImplementedError
 
     @abstractmethod
     def _get_headers(self) -> dict:
