@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -27,11 +28,11 @@ class UserParser(ABC):
 class RegisteredUserParser(UserParser):
     """Parses a standard registered user token from Keycloak."""
 
-    ACCOUNT_AUDIENCE = "account"
+    AUDIENCE = os.getenv("KEYCLOAK_AUDIENCE", "account")
 
     def can_parse(self) -> bool:
         # This parser handles tokens for the 'account' audience or tokens without a specific audience.
-        return "aud" not in self.token or self.token.get("aud") == self.ACCOUNT_AUDIENCE
+        return "aud" not in self.token or self.token.get("aud") == self.AUDIENCE
 
     def get_user(self) -> AuthenticatedUser:
         user_id = self.token.get("username")
