@@ -8,7 +8,7 @@ class DestinationAPI(ExternalApi):
     A class to interact with the destination API of the PID.
     """
 
-    base_url = f"{os.environ["BASE_API_URL_SEGITTUR_PID"]}/cgpid-backend/api/destinations/"
+    base_url = f"{os.environ['BASE_API_URL_SEGITTUR_PID']}/cgpid-backend/api/destinations/"
 
     def __init__(self, user_token: str):
         super().__init__(user_token)
