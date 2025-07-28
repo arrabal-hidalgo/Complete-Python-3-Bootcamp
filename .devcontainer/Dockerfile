@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/python:1-3.11-bookworm as commons
+FROM mcr.microsoft.com/devcontainers/python:1-3.11-bookworm AS commons
 
 ARG POETRY_VERSION=2.0.1
 ARG BUILD_DEPS='build-essential'
