@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "segittur-commons"
-version = "0.2.9-rc1"
+version = "0.2.9-rc2"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
   { name = "Alejandro Arrabal Hidalgo", email = "alejandro.arrabal@sngular.com" },
@@ -24,6 +24,7 @@ dependencies = [
     "azure-identity (>=1.23.0,<1.24.0)",
     "minio (>=7.2.15,<7.3.0)",
     "pycasbin >=1.4.0,<2.0.0",
+    "python-keycloak >=5.3.1,<5.4.0",
 ]
 
 [tool.poetry]
