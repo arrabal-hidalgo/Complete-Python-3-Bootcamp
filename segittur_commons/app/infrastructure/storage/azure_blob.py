@@ -31,6 +31,7 @@ class AzureBlob(Blob):
         self.account_url = server_url
         self.account_name = access_key
         self.account_key = secret_key
+        self.secure = secure
 
         if access_key and secret_key:
             self.azure_credential = {"account_name": access_key, "account_key": secret_key}
