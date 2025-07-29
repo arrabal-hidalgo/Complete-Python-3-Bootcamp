@@ -33,12 +33,15 @@ class AzureBlob(Blob):
         self.account_key = secret_key
         self.secure = secure
 
-        if access_key and secret_key:
-            self.azure_credential = {"account_name": access_key, "account_key": secret_key}
-        else:
-            self.azure_credential = DefaultAzureCredential()
+        if access_key:
+            if access_key and secret_key:
+                self.azure_credential = {"account_name": access_key, "account_key": secret_key}
+            else:
+                self.azure_credential = DefaultAzureCredential()
 
-        self.blob_service_client = BlobServiceClient(server_url, credential=self.azure_credential)
+            self.blob_service_client = BlobServiceClient(server_url, credential=self.azure_credential)
+        else: 
+            self.blob_service_client = BlobServiceClient(server_url)
 
         self.storage = None
 
