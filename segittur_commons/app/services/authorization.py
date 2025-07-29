@@ -28,10 +28,11 @@ class CasbinAuthorizer:
             bool: True if access is granted, False otherwise.
         """
 
-        # Checks for not tied to destination rules
+        # Checks for roles to routes not tied to destination rules
         if not resource_destination:
-            if self.enforcer.enforce(user_role, "*", path, method):
-                return True  # Permission granted
+            for user_role, _ in user.roles:
+                if self.enforcer.enforce(user_role, "*", path, method):
+                    return True  # Permission granted
 
         for user_role, user_destination in user.roles:
             # Case 1: Destination-specific role assignment (e.g., GESTOR_DESTINO in GRANADA)
