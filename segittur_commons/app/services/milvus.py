@@ -24,10 +24,7 @@ class MilvusHandler:
         **kwargs,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
-        if token: 
-            self.token = token
-        else:
-            self.token = os.getenv("MILVUS_TOKEN", "")
+        self.token = token or os.getenv("MILVUS_TOKEN", "")
 
         self.client = MilvusClient(uri=self.uri, token=self.token, **kwargs)
         self.embeddings_fn = AzureOpenAIEmbeddings(model=model_embeddings)

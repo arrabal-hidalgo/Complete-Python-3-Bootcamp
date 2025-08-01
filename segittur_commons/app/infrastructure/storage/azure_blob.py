@@ -3,13 +3,13 @@ from datetime import datetime, timedelta
 
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import (
+    BlobSasPermissions,
     BlobServiceClient,
     ContentSettings,
     generate_blob_sas,
-    BlobSasPermissions,
 )
 
-from .blob import Blob
+from segittur_commons.app.infrastructure.storage.blob import Blob
 
 
 class AzureBlob(Blob):
@@ -39,8 +39,10 @@ class AzureBlob(Blob):
             else:
                 self.azure_credential = DefaultAzureCredential()
 
-            self.blob_service_client = BlobServiceClient(server_url, credential=self.azure_credential)
-        else: 
+            self.blob_service_client = BlobServiceClient(
+                server_url, credential=self.azure_credential
+            )
+        else:
             self.blob_service_client = BlobServiceClient(server_url)
 
         self.storage = None
@@ -100,4 +102,6 @@ class AzureBlob(Blob):
         }
 
     def get_provider(self):
+        return self.AZURE_BLOB_STORAGE
+        return self.AZURE_BLOB_STORAGE
         return self.AZURE_BLOB_STORAGE
