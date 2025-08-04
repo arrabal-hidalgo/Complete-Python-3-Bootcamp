@@ -18,7 +18,7 @@ code_quality:
   script:
     - black --check segittur_commons/app
     - ruff check segittur_commons/app
-    - mypy segittur_commons/app 
+    - mypy segittur_commons/app
   only:
     - branches
     - merge_requests

@@ -15,8 +15,11 @@ class StorageProvider:
     @classmethod
     def create_storage(cls, bucket, provider: SupportedStorages | None = None) -> Blob:
         if provider is None:
-            provider = os.getenv("AVC_STORAGE_PROVIDER", cls.SupportedStorages.minio)
+            provider = cls.SupportedStorages(
+                os.getenv("AVC_STORAGE_PROVIDER", cls.SupportedStorages.minio)
+            )
 
+        storage: Blob
         if provider == cls.SupportedStorages.minio:
             storage = MinioBlob(
                 server_url=os.getenv("AVC_STORAGE_URL"),
