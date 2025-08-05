@@ -58,7 +58,7 @@ class KeycloakIm:
         self,
         grant_type: str = "urn:ietf:params:oauth:grant-type:uma-ticket",
         audience: str = "account",
-        claims: dict = [],
+        claims: dict | list = [],
     ):
         params_path = {"realm-name": self.realm_name}
         payload = {

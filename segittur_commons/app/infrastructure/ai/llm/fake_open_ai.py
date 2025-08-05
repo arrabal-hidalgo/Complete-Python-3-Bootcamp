@@ -11,7 +11,7 @@ from langchain_openai import ChatOpenAI
 class FakeLLM:
 
     FAKE_MSG = """if you want use a real LLM model you have to set the below environment variables:
-                    CHAT_MODEL=app.infrastructure.ai.llm.chat_open_ai_factory.ChatOpenAIFactory
+                    CHAT_MODEL=segittur_commons.app.infrastructure.ai.llm.chat_open_ai_factory.ChatOpenAIFactory
                     OPENAI_API_KEY=sk-your-llm-api-key
                 """
 

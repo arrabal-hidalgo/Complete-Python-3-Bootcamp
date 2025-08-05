@@ -267,3 +267,8 @@ old/
 
 # Pypirc file
 .pypirc
+
+.home/
+*.yaml
+
+poetry.lock

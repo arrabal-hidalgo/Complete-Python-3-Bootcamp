@@ -1,5 +1,4 @@
 services:
-
   app:
     container_name: commons-dev
     build:

@@ -2,7 +2,7 @@ import os
 
 from langchain_core.language_models import BaseChatModel
 
-from app.infrastructure.ai.llm.fake_open_ai import FakeOpenAI
+from segittur_commons.app.infrastructure.ai.llm.fake_open_ai import FakeOpenAI
 
 
 class FakeOpenAIFactory:

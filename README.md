@@ -4,7 +4,7 @@
 
 ### Dependencies
 
-Segittur AVC project development environment is dockerized, so you need to install `docker` and `docker compose` if you want run the project throught containers. To know how to open project throught DevContainer see [DevContainer section](#open-in-devcontainer).
+Segittur Commons project development environment is dockerized, so you need to install `docker` and `docker compose` if you want run the project throught containers. To know how to open project throught DevContainer see [DevContainer section](#open-in-devcontainer).
 
 ### Install
 
@@ -24,6 +24,13 @@ docker compose build
 ```bash
 docker compose up -d
 ```
+
+### Open in devContainer
+
+To open the project in **devContainer**, please execute the following steps:
+
+1. Add `.env` file into the `.devcontainer` folder.
+2. Click in the lower left corner blue button **(><)** and then click in *Reopen in Container*.
 
 ## Build project as PyPI package
 

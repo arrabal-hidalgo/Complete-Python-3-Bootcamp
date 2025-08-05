@@ -1,5 +1,5 @@
 import os
-from typing import Callable, List, Type, Union
+from typing import List, Type, Union
 
 from langchain_core.documents import Document
 from langchain_milvus import Milvus
@@ -24,10 +24,7 @@ class MilvusHandler:
         **kwargs,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
-        if token: 
-            self.token = token
-        else:
-            self.token = os.getenv("MILVUS_TOKEN", "")
+        self.token = token or os.getenv("MILVUS_TOKEN", "")
 
         self.client = MilvusClient(uri=self.uri, token=self.token, **kwargs)
         self.embeddings_fn = AzureOpenAIEmbeddings(model=model_embeddings)
@@ -50,10 +47,11 @@ class MilvusHandler:
         **kwargs_splitter,
     ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
-        if isinstance(texts[0], str):
-            splitted_docs = text_splitter.create_documents(texts, metadatas)
-        else:  # List[Document]
-            splitted_docs = text_splitter.split_documents(texts)
+        splitted_docs: List[Document] = (
+            text_splitter.create_documents(texts, metadatas)
+            if isinstance(texts[0], str)
+            else text_splitter.split_documents(texts)
+        )
         return splitted_docs
 
     def _prepare_documents(
@@ -167,7 +165,8 @@ class MilvusHandler:
         vector_store = self.get_vector_store(
             collection_name=collection_name, db_name=db_name, **kwargs_store
         )
-        return vector_store.add_documents(documents)
+        docs_ids: List[str] = vector_store.add_documents(documents)
+        return docs_ids
 
     def get_vector_store(
         self,
@@ -179,7 +178,7 @@ class MilvusHandler:
             embedding_function=self.embeddings_fn,
             collection_name=collection_name,
             connection_args=self._connection_args(db_name),
-            index_params=self.client.describe_index(DEFAULT_COLLECTION, "vector"),
+            index_params=self.client.describe_index(collection_name, "vector"),
             **kwargs_store,
         )
 
@@ -208,10 +207,8 @@ class MilvusHandler:
         kwargs_search: dict = {},
         kwargs_store: dict = {},
     ) -> List[Document]:
-        search_method: Callable[[str, dict], List[tuple[Document, float]]] = getattr(
-            vector_store or self.get_vector_store(**kwargs_store), search_fun
-        )
-        docs_scores = search_method(query, **kwargs_search)
+        search_method = getattr(vector_store or self.get_vector_store(**kwargs_store), search_fun)
+        docs_scores: List[tuple[Document, float]] = search_method(query, **kwargs_search)
         print(docs_scores)
 
         return [doc for doc, score in docs_scores if score >= threshold]
