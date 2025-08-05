@@ -1,6 +1,7 @@
 import json
 
 import typer
+from pymilvus import DataType
 
 from segittur_commons.app.services.milvus import (
     DEFAULT_COLLECTION,
@@ -20,6 +21,33 @@ def main(ctx: typer.Context):
     ctx.obj["milvus"] = milvus
 
 
+@cli.command(name="create_milvus_schema")
+def create_milvus_initial_schema(
+    ctx: typer.Context,
+    collection_name: str = typer.Option(DEFAULT_COLLECTION, help="Milvus collection name"),
+):
+    milvus: MilvusHandler = ctx.obj.get("milvus")
+    if milvus.exists_collection(collection_name=collection_name):
+        raise typer.Exit(f"Collection with name {collection_name} already exists")
+
+    schema = milvus.client.create_schema()
+
+    schema.add_field(field_name="pk", datatype=DataType.INT64, is_primary=True, auto_id=True)
+    schema.add_field(field_name="name", datatype=DataType.VARCHAR)
+    schema.add_field(field_name="text", datatype=DataType.VARCHAR)
+    schema.add_field(field_name="classes", datatype=DataType.VARCHAR)
+    schema.add_field(field_name="filename", datatype=DataType.VARCHAR)
+    schema.add_field(
+        field_name="destination",
+        datatype=DataType.VARCHAR,
+        max_length=512,
+        is_partition_key=True,
+    )
+    schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1536)
+
+    milvus.client.create_collection(collection_name=collection_name, schema=schema)
+
+
 @cli.command(name="load_data")
 def load_initial_milvus_data(
     ctx: typer.Context,
@@ -35,6 +63,15 @@ def load_initial_milvus_data(
         milvus.create_vector_store_from_texts(
             texts=texts, metadatas=raw_docs, collection_name=collection_name, db_name=db_name
         )
+
+
+@cli.command(name="describe_collection")
+def remove_milvus_collection(
+    ctx: typer.Context,
+    collection_name: str = typer.Option(DEFAULT_COLLECTION, help="Milvus collection name"),
+):
+    milvus: MilvusHandler = ctx.obj.get("milvus")
+    milvus.remove_collection(collection_name)
 
 
 @cli.command(name="remove_collection")
