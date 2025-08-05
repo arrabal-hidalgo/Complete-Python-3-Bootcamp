@@ -63,6 +63,8 @@ class Authenticator:
         for parser_class in self.parsers:
             parser_instance = parser_class(access_token)
             if parser_instance.can_parse():
-                return parser_instance.get_user()
+                user = parser_instance.get_user()
+                user.token = token
+                return user
 
         raise InvalidTokenError("No suitable parser found for the provided token.")

@@ -12,5 +12,6 @@ class AuthenticatedUser(BaseModel):
     id: str | None = None
     ref: str | None = None
     anonymous: bool
+    token: str | None = None
     # List of (role, destination) tuples. Destination is None for global roles.
     roles: List[Tuple[str, Optional[str]]] = []

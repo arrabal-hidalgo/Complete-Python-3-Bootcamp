@@ -103,5 +103,3 @@ class AzureBlob(Blob):
 
     def get_provider(self):
         return self.AZURE_BLOB_STORAGE
-        return self.AZURE_BLOB_STORAGE
-        return self.AZURE_BLOB_STORAGE
