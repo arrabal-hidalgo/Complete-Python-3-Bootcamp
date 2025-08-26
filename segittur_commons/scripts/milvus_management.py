@@ -50,6 +50,12 @@ def create_milvus_initial_schema(
         max_length=64,
         description="Timestamp in ISO 8601 format",  # Example: 2025-08-26T12:12:00+0000
     )
+    schema.add_field(
+        field_name="expiration_date",
+        datatype=DataType.VARCHAR,
+        max_length=64,
+        description="Timestamp in ISO 8601 format",  # Example: 2025-08-26T12:12:00+0000
+    )
 
     milvus.client.create_collection(collection_name=collection_name, schema=schema)
 
