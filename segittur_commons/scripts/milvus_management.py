@@ -36,7 +36,7 @@ def create_milvus_initial_schema(
     schema.add_field(field_name="name", datatype=DataType.VARCHAR, max_length=1024)
     schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535)
     schema.add_field(field_name="classes", datatype=DataType.VARCHAR, max_length=65535)
-    schema.add_field(field_name="filename", datatype=DataType.VARCHAR, max_length=5535)
+    schema.add_field(field_name="origin", datatype=DataType.VARCHAR, max_length=5535)
     schema.add_field(
         field_name="destination",
         datatype=DataType.VARCHAR,
@@ -44,6 +44,12 @@ def create_milvus_initial_schema(
         is_partition_key=True,
     )
     schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1536)
+    schema.add_field(
+        field_name="creation_datetime",
+        datatype=DataType.VARCHAR,
+        max_length=64,
+        description="Timestamp in ISO 8601 format",  # Example: 2025-08-26T12:12:00+0000
+    )
 
     milvus.client.create_collection(collection_name=collection_name, schema=schema)
 
