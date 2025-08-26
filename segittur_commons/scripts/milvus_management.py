@@ -71,15 +71,6 @@ def load_initial_milvus_data(
         )
 
 
-@cli.command(name="describe_collection")
-def remove_milvus_collection(
-    ctx: typer.Context,
-    collection_name: str = typer.Option(DEFAULT_COLLECTION, help="Milvus collection name"),
-):
-    milvus: MilvusHandler = ctx.obj.get("milvus")
-    milvus.remove_collection(collection_name)
-
-
 @cli.command(name="remove_collection")
 def remove_milvus_collection(
     ctx: typer.Context,
