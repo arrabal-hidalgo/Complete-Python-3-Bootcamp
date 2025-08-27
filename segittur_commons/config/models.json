@@ -1,0 +1,50 @@
+{
+    "providers": {
+      "azure-models": {
+        "factory": "AzureOpenAIFactory",
+        "configs": {
+          "default": {
+            "type": "chat",
+            "azure_endpoint": "${AZURE_OPENAI_ENDPOINT}",
+            "api_key": "${AZURE_OPENAI_API_KEY}",
+            "openai_api_version": "${OPENAI_API_VERSION}"
+          },
+          "preview": {
+            "type": "chat",
+            "azure_endpoint": "${AZURE_OPENAI_PREVIEW_ENDPOINT}",
+            "api_key": "${AZURE_OPENAI_PREVIEW_API_KEY}",
+            "openai_api_version": "${OPENAI_PREVIEW_API_VERSION}"
+          },
+          "embedding": {
+            "type": "embedding"
+          }
+        }
+      },
+      "openai-models": {
+        "factory": "ChatOpenAIFactory",
+        "configs": {
+          "default": {
+            "type": "chat",
+            "api_key": "${OPENAI_API_KEY}"
+          }
+        }
+      },
+      "fake-models": {
+         "factory": "FakeOpenAIFactory",
+         "configs": {
+             "type": "chat",
+             "default": {}
+         }
+      }
+    },
+    "models": {
+      "embedding-mini": {"name": "text-embedding-3-small", "provider": "azure-models", "config": "embedding" },
+      "llm": { "name": "gpt-4o", "provider": "azure-models", "config": "default" },
+      "llm-mini": { "name": "gpt-4o-mini", "provider": "azure-models", "config": "default" },
+      "audio": { "name": "whisper", "provider": "openai-models", "config": "preview" },
+      "audio-mini": { "name": "gpt-4o-mini-audio-preview", "provider": "azure-models", "config": "preview" },
+      "search-mini": { "name": "gpt-4o-mini-search-preview", "provider": "openai-models", "config": "default" }
+    },
+    "default_model": {"name": "fake", "provider": "fake-models", "config": "default" }
+  }
+  

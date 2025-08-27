@@ -1,14 +1,15 @@
 import os
-from typing import List, Type, Union
+from typing import List, Type, Union, cast
 
+from langchain_core.embeddings import Embeddings
 from langchain_core.documents import Document
 from langchain_milvus import Milvus
-from langchain_openai import AzureOpenAIEmbeddings
+from segittur_commons.app.infrastructure.ai.llm.llm_provider import LlmProvider
 from langchain_text_splitters.base import TS, TextSplitter
 from pymilvus import MilvusClient
 
-DEFAULT_DATABASE = "SEGITTUR_AVC"
-DEFAULT_COLLECTION = "general_vectorstore"
+DEFAULT_DATABASE = os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
+DEFAULT_COLLECTION = os.getenv("MILVUS_COLLECTION", "general_vectorstore")
 
 
 class MilvusHandler:
@@ -20,14 +21,16 @@ class MilvusHandler:
         self,
         uri: str = "",
         token: str = None,
-        model_embeddings: str = "text-embedding-3-small",
+        db_name: str = DEFAULT_DATABASE,
+        model_embeddings: str = "embedding-mini",
         **kwargs,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
         self.token = token or os.getenv("MILVUS_TOKEN", "")
+        self.db_name = db_name
 
-        self.client = MilvusClient(uri=self.uri, token=self.token, **kwargs)
-        self.embeddings_fn = AzureOpenAIEmbeddings(model=model_embeddings)
+        self.client = MilvusClient(uri=self.uri, db_name=self.db_name, token=self.token, **kwargs)
+        self.embeddings_fn = cast(Embeddings, LlmProvider.create_llm(model=model_embeddings))
 
     def _use_database(self, db_name: str, **kwargs_db):
         if db_name not in self.client.list_databases():
@@ -47,12 +50,12 @@ class MilvusHandler:
         **kwargs_splitter,
     ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
-        splitted_docs: List[Document] = (
-            text_splitter.create_documents(texts, metadatas)
-            if isinstance(texts[0], str)
-            else text_splitter.split_documents(texts)
-        )
-        return splitted_docs
+        if isinstance(texts[0], str):
+            str_texts: List[str] = cast(List[str], texts)
+            return cast(List[Document], text_splitter.create_documents(str_texts, metadatas))
+        else:
+            documents: List[Document] = cast(List[Document], texts)
+            return cast(List[Document], text_splitter.split_documents(documents))
 
     def _prepare_documents(
         self,
@@ -81,7 +84,8 @@ class MilvusHandler:
         # If texts are in the desired format (Document objects)
         # and no splitting is required, we can return them directly.
         if not text_splitter_fn and isinstance(texts[0], Document):
-            return texts
+            documents: List[Document] = cast(List[Document], texts)
+            return documents
 
         # If a splitter is provided, delegate the processing.
         if text_splitter_fn:
@@ -90,9 +94,10 @@ class MilvusHandler:
 
         # Just a list of strings that needs conversion to Document objects.
         _metadatas = (metadatas or [{}]) * len(texts)
+        str_texts: List[str] = cast(List[str], texts)
         return [
             Document(page_content=text, metadata=metadata)
-            for text, metadata in zip(texts, _metadatas)
+            for text, metadata in zip(str_texts, _metadatas)
         ]
 
     def create_vector_store_from_texts(
@@ -179,7 +184,8 @@ class MilvusHandler:
             collection_name=collection_name,
             connection_args=self._connection_args(db_name),
             index_params=self.client.describe_index(collection_name, "vector"),
-            **kwargs_store,
+            **kwargs_store,  # type: ignore[arg-type]
+            # FIXME: kwargs_store
         )
 
     def exists_collection(self, collection_name: str = DEFAULT_COLLECTION):

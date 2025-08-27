@@ -22,9 +22,9 @@ SKIP_REASON = "Azure Blob Storage environment variables (TEST_AZURE_ACCOUNT_URL,
 
 @unittest.skipIf(SKIP_AZURE_TESTS, SKIP_REASON)
 class TestAzureBlobIntegration(unittest.TestCase):
-    azure_blob_instance: AzureBlob = None
-    raw_blob_service_client: BlobServiceClient = None
-    test_buckets = []  # Keep track of buckets created by tests
+    azure_blob_instance: AzureBlob
+    raw_blob_service_client: BlobServiceClient
+    test_buckets: list[str] = []  # Keep track of buckets created by tests
 
     @classmethod
     def setUpClass(cls):
