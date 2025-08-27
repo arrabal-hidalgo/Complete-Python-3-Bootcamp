@@ -39,10 +39,7 @@ def create_milvus_initial_schema(
     schema.add_field(field_name="classes", datatype=DataType.VARCHAR, max_length=65535)
     schema.add_field(field_name="origin", datatype=DataType.VARCHAR, max_length=5535)
     schema.add_field(
-        field_name="destination",
-        datatype=DataType.VARCHAR,
-        max_length=512,
-        is_partition_key=True,
+        field_name="destination", datatype=DataType.VARCHAR, max_length=512, is_partition_key=True
     )
     schema.add_field(field_name="vector", datatype=DataType.FLOAT_VECTOR, dim=1536)
     schema.add_field(

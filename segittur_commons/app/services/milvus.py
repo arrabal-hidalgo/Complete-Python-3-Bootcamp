@@ -1,12 +1,13 @@
 import os
 from typing import List, Type, Union, cast
 
-from langchain_core.embeddings import Embeddings
 from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from langchain_milvus import Milvus
-from segittur_commons.app.infrastructure.ai.llm.llm_provider import LlmProvider
 from langchain_text_splitters.base import TS, TextSplitter
 from pymilvus import CollectionSchema, MilvusClient
+
+from segittur_commons.app.infrastructure.ai.llm.llm_provider import LlmProvider
 
 DEFAULT_DATABASE = os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
 DEFAULT_COLLECTION = os.getenv("MILVUS_COLLECTION", "general_vectorstore")
@@ -18,17 +19,11 @@ class MilvusHandler:
     """
 
     def __init__(
-        self,
-        uri: str = "",
-        token: str = None,
-        db_name: str = DEFAULT_DATABASE,
-        model_embeddings: str = "embedding-mini",
-        **kwargs,
+        self, uri: str = "", token: str = None, model_embeddings: str = "embedding-mini", **kwargs
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
         self.token = token or os.getenv("MILVUS_TOKEN", "")
-        self.db_name = db_name
-        self.client = MilvusClient(uri=self.uri, db_name=self.db_name, token=self.token, **kwargs)
+        self.client = MilvusClient(uri=self.uri, token=self.token, **kwargs)
         self.embeddings_fn = cast(Embeddings, LlmProvider.create_llm(model=model_embeddings))
 
     def _use_database(self, db_name: str, **kwargs_db):
