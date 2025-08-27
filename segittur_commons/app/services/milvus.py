@@ -32,7 +32,7 @@ class MilvusHandler:
         self.embeddings_fn = cast(Embeddings, LlmProvider.create_llm(model=model_embeddings))
 
     def _use_database(self, db_name: str, **kwargs_db):
-        self.create_database(db_name, kwargs_db)
+        self.create_database(db_name, **kwargs_db)
         self.client.use_database(db_name)
 
     def _connection_args(self, db_name: str):
