@@ -3,6 +3,7 @@
 
 stages:
   - analysis
+  - testing
   - deploy
 
 variables:
@@ -18,7 +19,7 @@ code_quality:
   script:
     - black --check segittur_commons/app
     - ruff check segittur_commons/app
-    - mypy segittur_commons/app 
+    - mypy segittur_commons/app
   only:
     - branches
     - merge_requests
@@ -44,6 +45,34 @@ dependencies_security:
     - docker build --target commons -t $IMAGE_NAME:$TEST_IMAGE_TAG -f .devcontainer/Dockerfile .
   script:
     - docker run --env-file .env_template --rm $IMAGE_NAME:$TEST_IMAGE_TAG /usr/local/segittur_commons/.venv/bin/pip-audit --cache-dir /tmp
+  only:
+    - branches
+    - merge_requests
+
+unit_tests:
+  stage: testing
+  image: python:3.11
+  when: always
+  variables:
+    PIP_ROOT_USER_ACTION: ignore
+    POETRY_HOME: "/opt/poetry"
+    POETRY_VIRTUALENVS_CREATE: false
+  before_script:
+    - pip install pytest pytest-cov poetry
+    - export PATH="$POETRY_HOME/bin:$PATH"
+    - poetry install
+  script:
+    - pytest --cov --cov-report term --cov-report xml:coverage.xml --junitxml=report.xml --cov-config=.coveragerc tests/unit
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  artifacts:
+    when: always
+    paths:
+      - report.xml
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
   only:
     - branches
     - merge_requests

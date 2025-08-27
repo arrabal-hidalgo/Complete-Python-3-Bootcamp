@@ -1,8 +1,9 @@
 import os
-from minio import Minio
-from .blob import Blob
-
 from datetime import timedelta
+
+from minio import Minio
+
+from segittur_commons.app.infrastructure.storage.blob import Blob
 
 
 class MinioBlob(Blob):

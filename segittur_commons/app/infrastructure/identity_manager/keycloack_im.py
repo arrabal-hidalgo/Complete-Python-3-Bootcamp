@@ -1,6 +1,6 @@
 import base64
 import json
-
+from typing import Any, Dict, List, Optional, Union
 from keycloak.exceptions import KeycloakPostError, raise_error_from_response
 from keycloak.keycloak_openid import URL_TOKEN, KeycloakOpenID
 
@@ -58,8 +58,8 @@ class KeycloakIm:
         self,
         grant_type: str = "urn:ietf:params:oauth:grant-type:uma-ticket",
         audience: str = "account",
-        claims: dict = [],
-    ):
+        claims: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
+    ) -> Any:
         params_path = {"realm-name": self.realm_name}
         payload = {
             "client_id": self.client_id,
@@ -79,4 +79,6 @@ class KeycloakIm:
             if content_type
             else self.kc_openid.connection.del_param_headers("Content-Type")
         )
-        return raise_error_from_response(data_raw, KeycloakPostError)
+        return raise_error_from_response(
+            data_raw, KeycloakPostError(error_message="Client token error")
+        )

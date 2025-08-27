@@ -10,5 +10,6 @@
             "source.organizeImports": "explicit"
         }
     },
-    "python.analysis.autoImportCompletions": true
+    "python.analysis.autoImportCompletions": true,
+    "python.defaultInterpreterPath": "/usr/local/${workspaceFolder}/.venv/bin/python"
 }

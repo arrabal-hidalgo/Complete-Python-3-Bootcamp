@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Type
 
 from jwt.exceptions import InvalidTokenError
 
@@ -52,7 +52,7 @@ class Authenticator:
     into a user entity using a chain of parsers.
     """
 
-    def __init__(self, identity_manager: KeycloakIm, custom_parsers: List[UserParser] = None):
+    def __init__(self, identity_manager: KeycloakIm, custom_parsers: List[Type[UserParser]] = None):
         self.identity_manager = identity_manager
         # Standard parser are always included. Custom parsers are checked first.
         self.parsers = (custom_parsers or []) + [RegisteredUserParser]
@@ -63,6 +63,8 @@ class Authenticator:
         for parser_class in self.parsers:
             parser_instance = parser_class(access_token)
             if parser_instance.can_parse():
-                return parser_instance.get_user()
+                user = parser_instance.get_user()
+                user.token = token
+                return user
 
         raise InvalidTokenError("No suitable parser found for the provided token.")
