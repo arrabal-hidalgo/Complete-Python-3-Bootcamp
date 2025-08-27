@@ -1,53 +1,30 @@
-import os
-import re
-from importlib import resources
-import json
-from typing import Any, Dict
+from typing import Any
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.embeddings import Embeddings
+from langchain_core.language_models import BaseChatModel
 
 from segittur_commons.app.infrastructure.ai.llm.ai_factory import AIFactory
-from segittur_commons.app.infrastructure.ai.llm.azure_open_ai_factory import AzureOpenAIFactory
-from segittur_commons.app.infrastructure.ai.llm.chat_open_ai_factory import ChatOpenAIFactory
-from segittur_commons.app.infrastructure.ai.llm.fake_open_ai_factory import FakeOpenAIFactory
+from segittur_commons.app.infrastructure.ai.llm.azure_open_ai_factory import (
+    AzureOpenAIFactory,
+)
+from segittur_commons.app.infrastructure.ai.llm.chat_open_ai_factory import (
+    ChatOpenAIFactory,
+)
+from segittur_commons.app.infrastructure.ai.llm.fake_open_ai_factory import (
+    FakeOpenAIFactory,
+)
+from segittur_commons.config.global_settings import SettingGlobal
 
 
-class LlmProvider:
+class LlmProvider(SettingGlobal):
+    default_config_file = "models.json"
+    config_file_var_env = "MODEL_CONFIG_FILE"
 
     PROVIDERS = {
         "azure-models": AzureOpenAIFactory(),
         "openai-models": ChatOpenAIFactory(),
         "fake-models": FakeOpenAIFactory(),
     }
-
-    _config: Dict[str, Dict[str, Any]] = {}
-
-    @classmethod
-    def __open_config(cls) -> str:
-        config = os.getenv("MODEL_CONFIG_FILE")
-        if config:
-            with open(config, "r") as f:
-                config_str = f.read()
-        else:
-            with resources.files("segittur_commons.config").joinpath("models.json").open("r") as f:
-                config_str = f.read()
-        return config_str
-
-    @classmethod
-    def _load_config(cls) -> Dict[str, Any]:
-
-        if cls._config is None or cls._config == {}:
-            config_str = cls.__open_config()
-
-            def replace_env_var(match):
-                var_name = match.group(1)
-                return os.getenv(var_name, "")
-
-            config_str = re.sub(r"\$\{(\w+)\}", replace_env_var, config_str)
-            cls._config = json.loads(config_str)
-
-        return cls._config
 
     @classmethod
     def get_model_config(cls, model_name: str) -> Any:
