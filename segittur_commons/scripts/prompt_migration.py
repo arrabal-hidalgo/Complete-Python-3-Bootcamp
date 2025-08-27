@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     langfuse_public_key: str = Field()
     langfuse_secret_key: str = Field()
     langfuse_host: str = Field()
-
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
@@ -42,7 +41,8 @@ def check_langfuse_connection(langfuse: Langfuse):
         langfuse.auth_check()
         langfuse_callback_handler.auth_check()
     except Exception as e:
-        raise typer.Exit(f"Auth check failed. Please check your credentials and config. Error: {e}")
+        typer.echo(f"Auth check failed. Please check your credentials and config. Error: {e}")
+        raise typer.Exit()
 
 
 def clean_prompts(prompts: list[PromptModel]) -> list[dict[Any, Any]]:
@@ -61,7 +61,6 @@ def get_list_prompts_from_str(list_arg: str) -> list[str]:
 def get_prompts(langfuse: Langfuse, prompts: list[str] = []) -> list[dict[str, str]]:
     prompts_client = langfuse.client.prompts
     list_prompts = prompts_client.list(limit=60).data
-
     prompts_with_names = []
     for prompt in list_prompts:
         if prompt.name in prompts or not prompts:
@@ -70,7 +69,6 @@ def get_prompts(langfuse: Langfuse, prompts: list[str] = []) -> list[dict[str, s
                 for prompt_version in prompt.versions
             ]
             prompts_with_names.extend(prompt_versions)
-
     return clean_prompts(prompts_with_names)
 
 
@@ -86,7 +84,6 @@ def get_prompt_versions(langfuse: Langfuse, prompts: list[str] = []) -> list[dic
 
 def create_prompt(langfuse: Langfuse, prompt: PromptModel):
     prompts_client = langfuse.client.prompts
-
     if prompt.type == "text":
         prompt_request = CreatePromptRequest_Text(
             name=prompt.name,
@@ -148,10 +145,8 @@ def import_prompts(
 ):
     prompts_list = get_list_prompts_from_str(prompts_to_import)
     old_prompts_versions = get_prompt_versions(ctx.obj.get("langfuse"), prompts_list)
-
     with open(input_path, encoding="utf-8") as file:
         prompts = json.load(file) if Path(input_path).suffix == ".json" else yaml.safe_load(file)
-
     new_prompts = [
         PromptModel(**prompt)
         for prompt in prompts
