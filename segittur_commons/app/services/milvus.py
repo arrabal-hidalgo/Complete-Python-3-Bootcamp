@@ -5,7 +5,7 @@ from langchain_core.documents import Document
 from langchain_milvus import Milvus
 from langchain_openai import AzureOpenAIEmbeddings
 from langchain_text_splitters.base import TS, TextSplitter
-from pymilvus import MilvusClient
+from pymilvus import CollectionSchema, MilvusClient
 
 DEFAULT_DATABASE = "SEGITTUR_AVC"
 DEFAULT_COLLECTION = "general_vectorstore"
@@ -24,7 +24,7 @@ class MilvusHandler:
         **kwargs,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
-        if token: 
+        if token:
             self.token = token
         else:
             self.token = os.getenv("MILVUS_TOKEN", "")
@@ -33,9 +33,7 @@ class MilvusHandler:
         self.embeddings_fn = AzureOpenAIEmbeddings(model=model_embeddings)
 
     def _use_database(self, db_name: str, **kwargs_db):
-        if db_name not in self.client.list_databases():
-            self.client.create_database(db_name, **kwargs_db)
-            print(f"Database '{db_name}' created successfully.")
+        self.create_database(db_name, kwargs_db)
         self.client.use_database(db_name)
 
     def _connection_args(self, db_name: str):
@@ -183,17 +181,34 @@ class MilvusHandler:
             **kwargs_store,
         )
 
+    def create_schema(self) -> CollectionSchema:
+        return self.client.create_schema()
+
     def exists_collection(self, collection_name: str = DEFAULT_COLLECTION):
         return self.client.has_collection(collection_name)
 
     def remove_collection(self, collection_name: str = DEFAULT_COLLECTION):
         self.client.drop_collection(collection_name)
 
+    def create_collection(
+        self,
+        schema: CollectionSchema,
+        collection_name: str = DEFAULT_COLLECTION,
+        db_name: str = DEFAULT_DATABASE,
+    ):
+        self._use_database(db_name=db_name)
+        self.client.create_collection(collection_name=collection_name, schema=schema)
+
     def remove_database(self, db_name: str = DEFAULT_DATABASE):
         self._use_database(db_name)
         for collection in self.client.list_collections():
             self.remove_collection(collection)
         self.client.drop_database(db_name)
+
+    def create_database(self, db_name: str = DEFAULT_DATABASE, **kwargs_db):
+        if db_name not in self.client.list_databases():
+            self.client.create_database(db_name, **kwargs_db)
+            print(f"Database '{db_name}' created successfully.")
 
     @classmethod
     def remove_vectors(self, vector_store: Milvus, **kwargs):
