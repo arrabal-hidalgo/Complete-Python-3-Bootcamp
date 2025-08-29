@@ -35,9 +35,11 @@ def create_milvus_initial_schema(
 
     schema.add_field(field_name="pk", datatype=DataType.INT64, is_primary=True, auto_id=True)
     schema.add_field(field_name="name", datatype=DataType.VARCHAR, max_length=1024)
-    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535)
-    schema.add_field(field_name="classes", datatype=DataType.VARCHAR, max_length=65535)
-    schema.add_field(field_name="origin", datatype=DataType.VARCHAR, max_length=5535)
+    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535, nullable=True)
+    schema.add_field(
+        field_name="classes", datatype=DataType.VARCHAR, max_length=65535, nullable=True
+    )
+    schema.add_field(field_name="origin", datatype=DataType.VARCHAR, max_length=5535, nullable=True)
     schema.add_field(
         field_name="destination",
         datatype=DataType.VARCHAR,
@@ -55,7 +57,8 @@ def create_milvus_initial_schema(
         field_name="expiration_date",
         datatype=DataType.VARCHAR,
         max_length=64,
-        description="Timestamp in ISO 8601 format",  # Example: 2025-08-26T12:12:00+0000
+        description="Timestamp in ISO 8601 format",  # Example: 2025-08-26T12:12:00+0000,
+        nullable=True,
     )
 
     milvus.create_collection(collection_name=collection_name, schema=schema, db_name=db_name)
