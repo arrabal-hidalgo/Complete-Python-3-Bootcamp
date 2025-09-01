@@ -5,12 +5,9 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_milvus import Milvus
 from langchain_text_splitters.base import TS, TextSplitter
-from pymilvus import CollectionSchema, MilvusClient
+from pymilvus import MilvusClient
 
 from segittur_commons.app.infrastructure.ai.llm.llm_provider import LlmProvider
-
-DEFAULT_DATABASE = os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
-DEFAULT_COLLECTION = os.getenv("MILVUS_COLLECTION", "general_vectorstore")
 
 
 class MilvusHandler:
@@ -19,20 +16,30 @@ class MilvusHandler:
     """
 
     def __init__(
-        self, uri: str = "", token: str = None, model_embeddings: str = "embedding-mini", **kwargs
+        self,
+        uri: str = "",
+        token: str = "",
+        db: str = "",
+        collection: str = "",
+        model_embeddings: str = "embedding-mini",
+        kwargs_client: dict = {},
+        kwargs_store: dict = {},
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
         self.token = token or os.getenv("MILVUS_TOKEN", "")
-        self.client = MilvusClient(uri=self.uri, token=self.token, **kwargs)
+        self.db = db or os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
+        self.collection = collection or os.getenv("MILVUS_COLLECTION", "general_vectorstore")
         self.embeddings_fn = cast(Embeddings, LlmProvider.create_llm(model=model_embeddings))
 
-    def _use_database(self, db_name: str, **kwargs_db):
-        self.create_database(db_name, **kwargs_db)
-        self.client.use_database(db_name)
-
-    def _connection_args(self, db_name: str):
-        self._use_database(db_name)
-        return {"uri": self.uri, "token": self.token, "db_name": db_name}
+        self.client = MilvusClient(uri=self.uri, token=self.token, db_name=self.db, **kwargs_client)
+        self.vector_store = Milvus(
+            embedding_function=self.embeddings_fn,
+            collection_name=self.collection,
+            connection_args={"uri": self.uri, "token": self.token, "db_name": self.db},
+            index_params=self.client.describe_index(self.collection, "vector"),
+            auto_id=kwargs_store.pop("auto_id", True),
+            **kwargs_store,
+        )
 
     def _split_text(
         self,
@@ -42,19 +49,19 @@ class MilvusHandler:
         **kwargs_splitter,
     ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
-        if isinstance(texts[0], str):
-            str_texts: List[str] = cast(List[str], texts)
-            return cast(List[Document], text_splitter.create_documents(str_texts, metadatas))
-        else:
-            documents: List[Document] = cast(List[Document], texts)
-            return cast(List[Document], text_splitter.split_documents(documents))
+        docs = (
+            text_splitter.create_documents(cast(List[str], texts), metadatas)
+            if isinstance(texts[0], str)
+            else text_splitter.split_documents(cast(List[Document], texts))
+        )
+        return docs
 
     def _prepare_documents(
         self,
         texts: Union[List[str], List[Document]] = [],
         metadatas: List[dict] = None,
         text_splitter_fn: Type[TS] = None,
-        kwargs_splitter: dict = None,
+        **kwargs_splitter,
     ) -> List[Document]:
         """
         Converts a list of texts or Documents into a list of Documents,
@@ -76,60 +83,25 @@ class MilvusHandler:
         # If texts are in the desired format (Document objects)
         # and no splitting is required, we can return them directly.
         if not text_splitter_fn and isinstance(texts[0], Document):
-            documents: List[Document] = cast(List[Document], texts)
-            return documents
+            return cast(List[Document], texts)
 
         # If a splitter is provided, delegate the processing.
         if text_splitter_fn:
-            kwargs_splitter = kwargs_splitter or {}
             return self._split_text(texts, text_splitter_fn, metadatas, **kwargs_splitter)
 
         # Just a list of strings that needs conversion to Document objects.
         _metadatas = (metadatas or [{}]) * len(texts)
-        str_texts: List[str] = cast(List[str], texts)
         return [
             Document(page_content=text, metadata=metadata)
-            for text, metadata in zip(str_texts, _metadatas)
+            for text, metadata in zip(cast(List[str], texts), _metadatas)
         ]
-
-    def create_vector_store_from_texts(
-        self,
-        texts: Union[List[str], List[Document]] = [],
-        metadatas: List[dict] = None,
-        collection_name: str = DEFAULT_COLLECTION,
-        db_name: str = DEFAULT_DATABASE,
-        text_splitter_fn: Type[TS] = None,
-        kwargs_splitter: dict = {},
-        kwargs_store: dict = {},
-    ) -> Milvus:
-        documents = self._prepare_documents(
-            texts=texts,
-            metadatas=metadatas,
-            text_splitter_fn=text_splitter_fn,
-            kwargs_splitter=kwargs_splitter,
-        )
-        return Milvus.from_documents(
-            documents,
-            self.embeddings_fn,
-            collection_name=collection_name,
-            connection_args=self._connection_args(db_name),
-            auto_id=kwargs_store.pop("auto_id", True),
-            # # TODO: Study other kwargs
-            # consistency_level="Strong",
-            # index_params={"index_type": "FLAT", "metric_type": "L2"},
-            # drop_old=False,  # set to True if seeking to drop the collection with that name if it exists
-            **kwargs_store,
-        )
 
     def add_documents(
         self,
         texts: Union[List[str], List[Document]] = [],
         metadatas: List[dict] = None,
-        collection_name: str = DEFAULT_COLLECTION,
-        db_name: str = DEFAULT_DATABASE,
         text_splitter_fn: Type[TS] = None,
         kwargs_splitter: dict = {},
-        **kwargs_store: dict,
     ) -> List[str]:
         """
         Adds documents to an existing collection in Milvus.
@@ -159,71 +131,21 @@ class MilvusHandler:
         if not documents:
             return []
 
-        vector_store = self.get_vector_store(
-            collection_name=collection_name, db_name=db_name, **kwargs_store
-        )
-        docs_ids: List[str] = vector_store.add_documents(documents)
+        docs_ids: List[str] = self.vector_store.add_documents(documents)
         return docs_ids
 
-    def get_vector_store(
-        self,
-        collection_name: str = DEFAULT_COLLECTION,
-        db_name: str = DEFAULT_DATABASE,
-        **kwargs_store: dict,
-    ) -> Milvus:
-        return Milvus(
-            embedding_function=self.embeddings_fn,
-            collection_name=collection_name,
-            connection_args=self._connection_args(db_name),
-            index_params=self.client.describe_index(collection_name, "vector"),
-            **kwargs_store,  # type: ignore[arg-type]
-            # FIXME: kwargs_store
-        )
+    def remove_vectors(self, **kwargs_delete):
+        if not self.vector_store.delete(**kwargs_delete):
+            raise Exception(f"Error deleting vectors ({kwargs_delete})")
 
-    def create_schema(self) -> CollectionSchema:
-        return self.client.create_schema()
-
-    def exists_collection(self, collection_name: str = DEFAULT_COLLECTION):
-        return self.client.has_collection(collection_name)
-
-    def remove_collection(self, collection_name: str = DEFAULT_COLLECTION):
-        self.client.drop_collection(collection_name)
-
-    def create_collection(
-        self,
-        schema: CollectionSchema,
-        collection_name: str = DEFAULT_COLLECTION,
-        db_name: str = DEFAULT_DATABASE,
-    ):
-        self._use_database(db_name=db_name)
-        self.client.create_collection(collection_name=collection_name, schema=schema)
-
-    def remove_database(self, db_name: str = DEFAULT_DATABASE):
-        self._use_database(db_name)
-        for collection in self.client.list_collections():
-            self.remove_collection(collection)
-        self.client.drop_database(db_name)
-
-    def create_database(self, db_name: str = DEFAULT_DATABASE, **kwargs_db):
-        if db_name not in self.client.list_databases():
-            self.client.create_database(db_name, **kwargs_db)
-            print(f"Database '{db_name}' created successfully.")
-
-    @classmethod
-    def remove_vectors(self, vector_store: Milvus, **kwargs):
-        vector_store.delete(**kwargs)
-
-    def query(
+    def query_with_scores(
         self,
         query: str,
         search_fun: str = "similarity_search_with_relevance_scores",
         threshold=0.8,
-        vector_store: Milvus = None,
-        kwargs_search: dict = {},
-        kwargs_store: dict = {},
+        **kwargs_search,
     ) -> List[Document]:
-        search_method = getattr(vector_store or self.get_vector_store(**kwargs_store), search_fun)
+        search_method = getattr(self.vector_store, search_fun)
         docs_scores: List[tuple[Document, float]] = search_method(query, **kwargs_search)
         print(docs_scores)
-
         return [doc for doc, score in docs_scores if score >= threshold]

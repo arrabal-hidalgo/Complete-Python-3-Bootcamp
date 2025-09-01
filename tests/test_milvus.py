@@ -14,6 +14,7 @@ class TestMilvusHandler:
         milvus.client.drop_collection(self.test_collection)
         milvus.client.drop_database(self.test_db)
 
+    @pytest.mark.skip()
     def test_manage_database_and_collections(self, milvus_conexion: MilvusHandler):
         milvus_conexion._use_database(self.test_db)
         assert (
