@@ -35,11 +35,11 @@ def create_milvus_initial_schema(
 
     schema.add_field(field_name="pk", datatype=DataType.INT64, is_primary=True, auto_id=True)
     schema.add_field(field_name="name", datatype=DataType.VARCHAR, max_length=1024)
-    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535, nullable=True)
+    schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535)
     schema.add_field(
         field_name="classes", datatype=DataType.VARCHAR, max_length=65535, nullable=True
     )
-    schema.add_field(field_name="origin", datatype=DataType.VARCHAR, max_length=5535, nullable=True)
+    schema.add_field(field_name="origin", datatype=DataType.VARCHAR, max_length=5535)
     schema.add_field(
         field_name="destination",
         datatype=DataType.VARCHAR,
