@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone
 
 import typer
+from langchain_core.documents import Document
 from pydantic import Field
 from pydantic_settings import BaseSettings
 from pymilvus import CollectionSchema, DataType, MilvusClient
@@ -144,8 +145,11 @@ def load_test_data(
     db_name: str = typer.Option(DEFAULT_DATABASE, help="Milvus database name"),
     use_schema: bool = typer.Option(True, help="Create collection with initial schema"),
 ):
+    """
+    Loads test data into the specified Milvus collection.
+    """
     initial_milvus_client: MilvusClient = ctx.obj.get("initial_milvus_client")
-    initial_milvus_client.use_database(db_name)
+    create_milvus_database(initial_milvus_client, db_name)
     if not initial_milvus_client.has_collection(collection_name):
         if use_schema:
             create_collection_with_initial_schema(ctx, collection_name, db_name=db_name)
@@ -153,17 +157,18 @@ def load_test_data(
             create_collection(ctx, collection_name, db_name=db_name)
 
     with open(data_file, encoding="utf-8") as f:
-        raw_docs: list[dict] = json.load(f)
+        data: list[dict] = json.load(f)
 
-    texts = []
+    docs: list[Document] = []
     today = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S%z")
-    for doc in raw_docs:
-        texts.append(doc.pop("text"))
-        doc["origin"] = "test"
-        doc.setdefault("creation_datetime", today)
+    for record in data:
+        record["origin"] = "test"
+        record.setdefault("creation_datetime", today)
+        docs.append(Document(page_content=record.pop("text"), metadata=record))
 
     milvus = MilvusHandler(db=db_name, collection=collection_name)
-    milvus.add_documents(texts=texts, metadatas=raw_docs)
+    milvus.vector_store.add_documents(docs)
+    print("Test data loaded successfully.")
 
 
 if __name__ == "__main__":

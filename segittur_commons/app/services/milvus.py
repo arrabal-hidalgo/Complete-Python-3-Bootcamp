@@ -1,11 +1,11 @@
+import inspect
 import os
-from typing import List, Type, Union, cast
+from typing import List, Type, cast
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_milvus import Milvus
 from langchain_text_splitters.base import TS, TextSplitter
-from pymilvus import MilvusClient
 
 from segittur_commons.app.infrastructure.ai.llm.llm_provider import LlmProvider
 
@@ -17,12 +17,11 @@ class MilvusHandler:
 
     def __init__(
         self,
-        uri: str = "",
-        token: str = "",
-        db: str = "",
-        collection: str = "",
+        uri: str = None,
+        token: str = None,
+        db: str = None,
+        collection: str = None,
         model_embeddings: str = "embedding-mini",
-        kwargs_client: dict = {},
         kwargs_store: dict = {},
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
@@ -31,25 +30,31 @@ class MilvusHandler:
         self.collection = collection or os.getenv("MILVUS_COLLECTION", "general_vectorstore")
         self.embeddings_fn = cast(Embeddings, LlmProvider.create_llm(model=model_embeddings))
 
-        self.client = MilvusClient(uri=self.uri, token=self.token, db_name=self.db, **kwargs_client)
         self.vector_store = Milvus(
             embedding_function=self.embeddings_fn,
             collection_name=self.collection,
             connection_args={"uri": self.uri, "token": self.token, "db_name": self.db},
-            index_params=self.client.describe_index(self.collection, "vector"),
             auto_id=kwargs_store.pop("auto_id", True),
             **kwargs_store,
         )
 
+    @property
+    def client(self):
+        return self.vector_store.client
+
+    @property
+    def aclient(self):
+        return self.vector_store.aclient
+
     def _split_text(
         self,
-        texts: Union[List[str], List[Document]],
+        texts: List[str] | List[Document],
         text_splitter_fn: Type[TS],
         metadatas: List[dict] = None,
         **kwargs_splitter,
     ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
-        docs = (
+        docs: List[Document] = (
             text_splitter.create_documents(cast(List[str], texts), metadatas)
             if isinstance(texts[0], str)
             else text_splitter.split_documents(cast(List[Document], texts))
@@ -58,7 +63,7 @@ class MilvusHandler:
 
     def _prepare_documents(
         self,
-        texts: Union[List[str], List[Document]] = [],
+        texts: List[str] | List[Document] = [],
         metadatas: List[dict] = None,
         text_splitter_fn: Type[TS] = None,
         **kwargs_splitter,
@@ -96,12 +101,12 @@ class MilvusHandler:
             for text, metadata in zip(cast(List[str], texts), _metadatas)
         ]
 
-    def add_documents(
+    async def aadd_documents(
         self,
-        texts: Union[List[str], List[Document]] = [],
+        texts: List[str] | List[Document] = [],
         metadatas: List[dict] = None,
         text_splitter_fn: Type[TS] = None,
-        kwargs_splitter: dict = {},
+        **kwargs_splitter,
     ) -> List[str]:
         """
         Adds documents to an existing collection in Milvus.
@@ -122,30 +127,40 @@ class MilvusHandler:
         Returns:
             A list of IDs of the inserted documents.
         """
-        documents = self._prepare_documents(
-            texts=texts,
-            metadatas=metadatas,
-            text_splitter_fn=text_splitter_fn,
-            kwargs_splitter=kwargs_splitter,
-        )
+        documents = self._prepare_documents(texts, metadatas, text_splitter_fn, **kwargs_splitter)
         if not documents:
             return []
 
-        docs_ids: List[str] = self.vector_store.add_documents(documents)
+        docs_ids: List[str] = await self.vector_store.aadd_documents(documents)
         return docs_ids
 
-    def remove_vectors(self, **kwargs_delete):
-        if not self.vector_store.delete(**kwargs_delete):
-            raise Exception(f"Error deleting vectors ({kwargs_delete})")
+    async def aremove_documents(self, **kwargs_delete):
+        if not await self.vector_store.adelete(**kwargs_delete):
+            raise Exception(f"Error deleting documents ({kwargs_delete})")
 
-    def query_with_scores(
+    async def aget_records(self, limit: int = 10, **kwargs):
+        return await self.vector_store.aclient.query(self.collection, limit=limit, **kwargs)
+
+    async def aquery_with_scores(
         self,
         query: str,
-        search_fun: str = "similarity_search_with_relevance_scores",
+        search_fun: str = "asimilarity_search_with_score",
         threshold=0.8,
         **kwargs_search,
     ) -> List[Document]:
-        search_method = getattr(self.vector_store, search_fun)
-        docs_scores: List[tuple[Document, float]] = search_method(query, **kwargs_search)
+        try:
+            search_method = getattr(self.vector_store, search_fun)
+        except AttributeError:
+            raise ValueError(
+                f"The search function '{search_fun}' does not exist on the vector store."
+            )
+
+        if not inspect.iscoroutinefunction(search_method):
+            raise TypeError(
+                f"The search function '{search_fun}' is not asynchronous. "
+                "Please provide an async function name."
+            )
+
+        docs_scores: List[tuple[Document, float]] = await search_method(query, **kwargs_search)
         print(docs_scores)
         return [doc for doc, score in docs_scores if score >= threshold]

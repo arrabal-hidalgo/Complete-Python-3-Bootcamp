@@ -1,5 +1,6 @@
 {
     "python.envFile": "${workspaceFolder}/.env",
+    "python.defaultInterpreterPath": "/usr/local/${workspaceFolder}/.venv/bin/python",
     "python.testing.pytestEnabled": true,
     "[python]": {
         "editor.formatOnType": true,
@@ -10,6 +11,5 @@
             "source.organizeImports": "explicit"
         }
     },
-    "python.analysis.autoImportCompletions": true,
-    "python.defaultInterpreterPath": "/usr/local/${workspaceFolder}/.venv/bin/python"
+    "python.analysis.autoImportCompletions": true
 }
