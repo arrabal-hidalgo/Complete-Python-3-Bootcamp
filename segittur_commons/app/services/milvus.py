@@ -22,7 +22,7 @@ class MilvusHandler:
         db: str = None,
         collection: str = None,
         model_embeddings: str = "embedding-mini",
-        kwargs_store: dict = {},
+        **kwargs_store,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
         self.token = token or os.getenv("MILVUS_TOKEN", "")
