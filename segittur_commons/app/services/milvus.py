@@ -1,4 +1,3 @@
-import inspect
 import os
 from typing import List, Type, cast
 
@@ -22,13 +21,16 @@ class MilvusHandler:
         db: str = None,
         collection: str = None,
         model_embeddings: str = "embedding-mini",
+        kwargs_model: dict = {},
         **kwargs_store,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
         self.token = token or os.getenv("MILVUS_TOKEN", "")
         self.db = db or os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
         self.collection = collection or os.getenv("MILVUS_COLLECTION", "general_vectorstore")
-        self.embeddings_fn = cast(Embeddings, LlmProvider.create_llm(model=model_embeddings))
+        self.embeddings_fn = cast(
+            Embeddings, LlmProvider.create_llm(model=model_embeddings, **kwargs_model)
+        )
 
         self.vector_store = Milvus(
             embedding_function=self.embeddings_fn,
@@ -141,26 +143,13 @@ class MilvusHandler:
     async def aget_records(self, limit: int = 10, **kwargs):
         return await self.vector_store.aclient.query(self.collection, limit=limit, **kwargs)
 
-    async def aquery_with_scores(
-        self,
-        query: str,
-        search_fun: str = "asimilarity_search_with_score",
-        threshold=0.8,
-        **kwargs_search,
+    async def asearch_with_scores(
+        self, query: str, score_threshold=0.8, **kwargs_search
     ) -> List[Document]:
-        try:
-            search_method = getattr(self.vector_store, search_fun)
-        except AttributeError:
-            raise ValueError(
-                f"The search function '{search_fun}' does not exist on the vector store."
-            )
-
-        if not inspect.iscoroutinefunction(search_method):
-            raise TypeError(
-                f"The search function '{search_fun}' is not asynchronous. "
-                "Please provide an async function name."
-            )
-
-        docs_scores: List[tuple[Document, float]] = await search_method(query, **kwargs_search)
-        print(docs_scores)
-        return [doc for doc, score in docs_scores if score >= threshold]
+        docs_scores: List[tuple[Document, float]] = await self.vector_store.asearch(
+            query,
+            search_type="similarity_score_threshold",
+            score_threshold=score_threshold,
+            **kwargs_search,
+        )
+        return [doc for doc, _ in docs_scores]
