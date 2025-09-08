@@ -1,0 +1,62 @@
+[
+  {
+    "name": "La Alhambra de Granada",
+    "text": "La Alhambra es un conjunto de palacios y fortalezas en Granada, ideal para los amantes del patrimonio cultural. Recomendado reservar entrada online con antelación.",
+    "classes": "destino.monumento",
+    "destination": "Granada"
+  },
+  {
+    "name": "Senderismo en Picos de Europa",
+    "text": "Los Picos de Europa ofrecen rutas para senderistas de todos los niveles. La Ruta del Cares es una de las más famosas. Llevar calzado adecuado.",
+    "classes": "actividad.aventura",
+    "destination": "Picos de Europa"
+  },
+  {
+    "name": "Alojamientos rurales en Asturias",
+    "text": "Asturias dispone de una amplia oferta de casas rurales en entornos naturales, ideales para familias y escapadas tranquilas.",
+    "classes": "alojamiento.rural",
+    "destination": "Asturias"
+  },
+  {
+    "name": "Consejos para viajar en AVE por España",
+    "text": "El AVE conecta ciudades como Madrid, Barcelona y Sevilla. Compra los billetes con antelación para conseguir mejores precios.",
+    "classes": "consejo.transporte",
+    "destination": "España"
+  },
+  {
+    "name": "La fiesta de San Fermín en Pamplona",
+    "text": "San Fermín se celebra en julio con encierros y desfiles. Es una tradición cultural destacada en España. Reserva alojamiento con antelación.",
+    "classes": "actividad.evento_cultural",
+    "destination": "Pamplona"
+  },
+  {
+    "name": "Playas tranquilas en la Costa Brava",
+    "text": "Las calas Sa Tuna y Aiguablava en la Costa Brava son ideales para quienes buscan playas tranquilas y naturaleza.",
+    "classes": "destino.playa",
+    "destination": "Costa Brava"
+  },
+  {
+    "name": "Hoteles boutique en Sevilla",
+    "text": "Sevilla ofrece hoteles boutique en el centro histórico, ideales para quienes buscan una estancia con encanto y servicios personalizados.",
+    "classes": "alojamiento.hotel",
+    "destination": "Sevilla"
+  },
+  {
+    "name": "Consejos para viajar en verano a España",
+    "text": "En verano, lleva protección solar y mantente hidratado. Reserva actividades con antelación, ya que es temporada alta.",
+    "classes": "consejo.temporada",
+    "destination": "España"
+  },
+  {
+    "name": "Gastronomía típica de Galicia",
+    "text": "Galicia es famosa por su pulpo a feira, empanadas y mariscos frescos. Ideal para los amantes de la gastronomía local.",
+    "classes": "actividad.gastronomia",
+    "destination": "Galicia"
+  },
+  {
+    "name": "Regulaciones para acampar en España",
+    "text": "En España, la acampada libre está regulada y suele estar prohibida en espacios naturales protegidos. Consulta las normativas locales antes de instalar tu tienda.",
+    "classes": "consejo.regulacion",
+    "destination": "España"
+  }
+]

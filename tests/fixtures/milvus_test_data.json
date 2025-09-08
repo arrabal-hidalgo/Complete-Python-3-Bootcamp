@@ -1,0 +1,82 @@
+[
+  {
+    "filename": "La Alhambra de Granada",
+    "text": "La Alhambra es un conjunto de palacios y fortalezas en Granada, ideal para los amantes del patrimonio cultural. Recomendado reservar entrada online con antelación.",
+    "category": "destino",
+    "subcategory": "monumento",
+    "destination": "Granada",
+    "topic": "cultural heritage"
+  },
+  {
+    "filename": "Senderismo en Picos de Europa",
+    "text": "Los Picos de Europa ofrecen rutas para senderistas de todos los niveles. La Ruta del Cares es una de las más famosas. Llevar calzado adecuado.",
+    "category": "actividad",
+    "subcategory": "aventura",
+    "destination": "Picos de Europa",
+    "topic": "outdoor adventures"
+  },
+  {
+    "filename": "Alojamientos rurales en Asturias",
+    "text": "Asturias dispone de una amplia oferta de casas rurales en entornos naturales, ideales para familias y escapadas tranquilas.",
+    "category": "alojamiento",
+    "subcategory": "rural",
+    "destination": "Asturias",
+    "topic": "rural stays"
+  },
+  {
+    "filename": "Consejos para viajar en AVE por España",
+    "text": "El AVE conecta ciudades como Madrid, Barcelona y Sevilla. Compra los billetes con antelación para conseguir mejores precios.",
+    "category": "consejo",
+    "subcategory": "transporte",
+    "destination": "España",
+    "topic": "transportation"
+  },
+  {
+    "filename": "La fiesta de San Fermín en Pamplona",
+    "text": "San Fermín se celebra en julio con encierros y desfiles. Es una tradición cultural destacada en España. Reserva alojamiento con antelación.",
+    "category": "actividad",
+    "subcategory": "evento cultural",
+    "destination": "Pamplona",
+    "topic": "cultural events"
+  },
+  {
+    "filename": "Playas tranquilas en la Costa Brava",
+    "text": "Las calas Sa Tuna y Aiguablava en la Costa Brava son ideales para quienes buscan playas tranquilas y naturaleza.",
+    "category": "destino",
+    "subcategory": "playa",
+    "destination": "Costa Brava",
+    "topic": "natural sites"
+  },
+  {
+    "filename": "Hoteles boutique en Sevilla",
+    "text": "Sevilla ofrece hoteles boutique en el centro histórico, ideales para quienes buscan una estancia con encanto y servicios personalizados.",
+    "category": "alojamiento",
+    "subcategory": "hotel",
+    "destination": "Sevilla",
+    "topic": "unique lodging options"
+  },
+  {
+    "filename": "Consejos para viajar en verano a España",
+    "text": "En verano, lleva protección solar y mantente hidratado. Reserva actividades con antelación, ya que es temporada alta.",
+    "category": "consejo",
+    "subcategory": "temporada",
+    "destination": "España",
+    "topic": "seasonal advice"
+  },
+  {
+    "filename": "Gastronomía típica de Galicia",
+    "text": "Galicia es famosa por su pulpo a feira, empanadas y mariscos frescos. Ideal para los amantes de la gastronomía local.",
+    "category": "actividad",
+    "subcategory": "gastronomía",
+    "destination": "Galicia",
+    "topic": "gastronomy"
+  },
+  {
+    "filename": "Regulaciones para acampar en España",
+    "text": "En España, la acampada libre está regulada y suele estar prohibida en espacios naturales protegidos. Consulta las normativas locales antes de instalar tu tienda.",
+    "category": "consejo",
+    "subcategory": "regulación",
+    "destination": "España",
+    "topic": "regulations"
+  }
+]
