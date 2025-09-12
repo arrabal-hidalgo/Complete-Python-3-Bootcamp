@@ -28,7 +28,10 @@ class MilvusHandler:
         self.uri = uri or os.environ["MILVUS_URL"]
         self.token = token or os.getenv("MILVUS_TOKEN", "")
         self.db = db or os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
-        self.collection = collection or os.getenv("MILVUS_COLLECTION", "general_vectorstore")
+        if collection:
+            self.collection = collection
+        else:
+            self.collection = os.getenv("MILVUS_COLLECTION", "general_vectorstore")
         self.embeddings_fn = cast(
             Embeddings, LlmProvider.create_llm(model=model_embeddings, **kwargs_model)
         )

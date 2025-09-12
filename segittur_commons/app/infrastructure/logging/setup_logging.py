@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 from logging.config import dictConfig
+from typing import Dict, Any
 
 
 class JsonFormatter(logging.Formatter):
@@ -46,12 +47,12 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log_record, default=str)
 
 
-def setup_logging(loggers: dict):
+def setup_logging(loggers: Dict[str, Any]):
     log_level = os.getenv("LOGGING_LEVEL", "INFO").upper()
     graylog_host = os.getenv("GRAYLOG_HOST")
     graylog_port_str = os.getenv("GRAYLOG_PORT")
 
-    config = {
+    config: Dict[str, Any] = {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -90,7 +91,7 @@ def setup_logging(loggers: dict):
                 "port": graylog_port,
                 "level": log_level,
             }
-            for logger in loggers.keys:
+            for logger in loggers.keys():
                 config["loggers"][logger]["handlers"].append("graylog")
 
         except (ValueError, TypeError) as e:
