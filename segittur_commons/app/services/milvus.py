@@ -1,11 +1,11 @@
-import inspect
 import os
-from typing import List, Type, cast
+from typing import Dict, List, Type, cast
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_milvus import Milvus
 from langchain_text_splitters.base import TS, TextSplitter
+from pymilvus import AsyncMilvusClient, MilvusClient
 
 from segittur_commons.app.infrastructure.ai.llm.llm_provider import LlmProvider
 
@@ -22,13 +22,16 @@ class MilvusHandler:
         db: str = None,
         collection: str = None,
         model_embeddings: str = "embedding-mini",
+        kwargs_model: Dict = {},
         **kwargs_store,
     ):
         self.uri = uri or os.environ["MILVUS_URL"]
         self.token = token or os.getenv("MILVUS_TOKEN", "")
         self.db = db or os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
         self.collection = collection or os.getenv("MILVUS_COLLECTION", "general_vectorstore")
-        self.embeddings_fn = cast(Embeddings, LlmProvider.create_llm(model=model_embeddings))
+        self.embeddings_fn = cast(
+            Embeddings, LlmProvider.create_llm(model=model_embeddings, **kwargs_model)
+        )
 
         self.vector_store = Milvus(
             embedding_function=self.embeddings_fn,
@@ -39,18 +42,18 @@ class MilvusHandler:
         )
 
     @property
-    def client(self):
+    def client(self) -> MilvusClient:
         return self.vector_store.client
 
     @property
-    def aclient(self):
+    def aclient(self) -> AsyncMilvusClient:
         return self.vector_store.aclient
 
     def _split_text(
         self,
         texts: List[str] | List[Document],
         text_splitter_fn: Type[TS],
-        metadatas: List[dict] = None,
+        metadatas: List[Dict] = None,
         **kwargs_splitter,
     ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
@@ -63,8 +66,8 @@ class MilvusHandler:
 
     def _prepare_documents(
         self,
-        texts: List[str] | List[Document] = [],
-        metadatas: List[dict] = None,
+        texts: List[str] | List[Document],
+        metadatas: List[Dict] = None,
         text_splitter_fn: Type[TS] = None,
         **kwargs_splitter,
     ) -> List[Document]:
@@ -101,10 +104,10 @@ class MilvusHandler:
             for text, metadata in zip(cast(List[str], texts), _metadatas)
         ]
 
-    async def aadd_documents(
+    def add_documents(
         self,
-        texts: List[str] | List[Document] = [],
-        metadatas: List[dict] = None,
+        texts: List[str] | List[Document],
+        metadatas: List[Dict] = None,
         text_splitter_fn: Type[TS] = None,
         **kwargs_splitter,
     ) -> List[str]:
@@ -130,37 +133,65 @@ class MilvusHandler:
         documents = self._prepare_documents(texts, metadatas, text_splitter_fn, **kwargs_splitter)
         if not documents:
             return []
+        docs: List[str] = self.vector_store.add_documents(documents)
+        return docs
 
-        docs_ids: List[str] = await self.vector_store.aadd_documents(documents)
-        return docs_ids
+    async def aadd_documents(
+        self,
+        texts: List[str] | List[Document],
+        metadatas: List[Dict] = None,
+        text_splitter_fn: Type[TS] = None,
+        **kwargs_splitter,
+    ) -> List[str]:
+        """
+        Adds documents to an existing collection in Milvus asynchronously.
+
+        If the input `texts` are strings, they will be converted to
+        LangChain Document objects. If a `text_splitter_fn` is provided,
+        the documents will be split before being added.
+
+        Args:
+            texts: A list of strings or LangChain Document objects to add.
+            metadatas: Optional list of metadatas for the texts. Only used if
+                `texts` is a list of strings.
+            collection_name: The name of the collection to add documents to.
+            db_name: The name of the database where the collection resides.
+            text_splitter_fn: Optional text splitter class from LangChain.
+            kwargs_splitter: Optional keyword arguments for the text splitter.
+
+        Returns:
+            A list of IDs of the inserted documents.
+        """
+        documents = self._prepare_documents(texts, metadatas, text_splitter_fn, **kwargs_splitter)
+        if not documents:
+            return []
+        docs: List[str] = await self.vector_store.aadd_documents(documents)
+        return docs
+
+    def remove_documents(self, **kwargs_delete):
+        if not self.vector_store.delete(**kwargs_delete):
+            raise Exception(f"Error deleting documents ({kwargs_delete})")
 
     async def aremove_documents(self, **kwargs_delete):
         if not await self.vector_store.adelete(**kwargs_delete):
             raise Exception(f"Error deleting documents ({kwargs_delete})")
 
-    async def aget_records(self, limit: int = 10, **kwargs):
-        return await self.vector_store.aclient.query(self.collection, limit=limit, **kwargs)
+    def get_records(self, offset: int = 0, limit: int = 10, **kwargs) -> List[Dict]:
+        records: List[Dict] = self.vector_store.client.query(
+            self.collection, offset=offset, limit=limit, **kwargs
+        )
+        return records
 
-    async def aquery_with_scores(
-        self,
-        query: str,
-        search_fun: str = "asimilarity_search_with_score",
-        threshold=0.8,
-        **kwargs_search,
-    ) -> List[Document]:
-        try:
-            search_method = getattr(self.vector_store, search_fun)
-        except AttributeError:
-            raise ValueError(
-                f"The search function '{search_fun}' does not exist on the vector store."
-            )
+    async def aget_records(self, offset: int = 0, limit: int = 10, **kwargs) -> List[Dict]:
+        records: List[Dict] = await self.vector_store.aclient.query(
+            self.collection, offset=offset, limit=limit, **kwargs
+        )
+        return records
 
-        if not inspect.iscoroutinefunction(search_method):
-            raise TypeError(
-                f"The search function '{search_fun}' is not asynchronous. "
-                "Please provide an async function name."
-            )
+    def search(self, query: str, search_type: str, **kwargs_search) -> List[Document]:
+        docs: List[Document] = self.vector_store.search(query, search_type, **kwargs_search)
+        return docs
 
-        docs_scores: List[tuple[Document, float]] = await search_method(query, **kwargs_search)
-        print(docs_scores)
-        return [doc for doc, score in docs_scores if score >= threshold]
+    async def asearch(self, query: str, search_type: str, **kwargs_search) -> List[Document]:
+        docs: List[Document] = await self.vector_store.asearch(query, search_type, **kwargs_search)
+        return docs
