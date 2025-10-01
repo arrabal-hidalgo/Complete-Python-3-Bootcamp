@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "segittur-commons"
-version = "0.2.16-rc.2"
+version = "0.2.16-rc.5"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
   { name = "Alejandro Arrabal Hidalgo", email = "alejandro.arrabal@sngular.com" },
@@ -65,7 +65,7 @@ profile = "black"
 testpaths = [ "tests" ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
