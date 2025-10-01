@@ -16,9 +16,8 @@ class FakeLLM:
                 """
 
     CHAT = GenericFakeChatModel(
-        messages=cycle([AIMessage(content=f"{FAKE_MSG} v1"), AIMessage(content=f"{FAKE_MSG} v2")])
+        messages=cycle([AIMessage(content=f"{FAKE_MSG} v1", additional_kwargs={'audio': {'id': 'audio_68dc6f2db4c88190a6ea238a373dcfd0', 'data': '', 'transcript': f"{FAKE_MSG} v1"} }), AIMessage(content=f"{FAKE_MSG} v2", additional_kwargs={'audio': {'id': 'audio_68dc6f2db4c88190a6ea238a373dcfd0', 'data': '', 'transcript': f"{FAKE_MSG} v2"}})])
     )
-
 
 class FakeOpenAI(ChatOpenAI):
 
