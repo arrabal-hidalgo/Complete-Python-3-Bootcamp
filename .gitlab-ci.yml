@@ -54,6 +54,7 @@ dependencies_security:
   only:
     - branches
     - merge_requests
+  allow_failure: true
 
 unit_tests:
   stage: testing

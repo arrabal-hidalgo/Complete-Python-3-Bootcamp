@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/python:1-3.11-bookworm AS commons
+FROM python:3.13-slim-bookworm AS commons
 
 ARG POETRY_VERSION=2.0.1
 ARG BUILD_DEPS='build-essential'
@@ -23,7 +23,8 @@ COPY pyproject.toml .
 RUN apt-get -q update \
   && apt-get install --no-install-recommends -yq $BUILD_DEPS \
   && pip install "poetry==$POETRY_VERSION" \
-  && poetry install --no-interaction --no-ansi --no-root && rm -rf ${POETRY_CACHE_DIR}\
+  && poetry install --no-interaction --no-ansi --no-root \
+  && poetry run pip install --upgrade pip && rm -rf ${POETRY_CACHE_DIR}\
   && apt autoremove -y && apt-get clean && apt-get purge -y --auto-remove \
   && dpkg -l | grep ^rc | awk '{print $2}' | xargs apt-get purge -y \
   && rm -rf /var/lib/apt/lists/* \
