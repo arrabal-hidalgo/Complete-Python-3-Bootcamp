@@ -5,6 +5,7 @@ from segittur_commons.app.infrastructure.ai.llm.ai_factory import AIFactory
 from langchain_core.language_models import BaseChatModel
 from langchain_core.embeddings import Embeddings
 
+from openai import AzureOpenAI
 from langchain_openai import AzureChatOpenAI
 from langchain_openai import AzureOpenAIEmbeddings
 
@@ -41,4 +42,11 @@ class AzureOpenAIFactory(AIFactory):
                 max_retries=2,
                 model_kwargs=model_kwargs,
             )
+        elif "stt" == model_type:
+            return AzureOpenAI(
+                api_key=api_key,
+                azure_endpoint=azure_endpoint,
+                api_version=openai_api_version,
+                max_retries=2,
+            ).audio.transcriptions
         raise ValueError(f"${model_type } model type not supported. Only [chat|embedding]")
