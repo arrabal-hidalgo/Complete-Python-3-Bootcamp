@@ -58,4 +58,4 @@ class FakeOpenAI(ChatOpenAI):
         return FakeLLM.CHAT.invoke("random")
 
     def create(self, model, file):
-        return self.Transcription() 
+        return self.Transcription()
