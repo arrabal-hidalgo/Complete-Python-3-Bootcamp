@@ -17,6 +17,9 @@
           },
           "embedding": {
             "type": "embedding"
+          },
+          "stt": {
+            "type": "stt"
           }
         }
       },
@@ -41,8 +44,8 @@
       "embedding-mini": {"name": "text-embedding-3-small", "provider": "azure-models", "config": "embedding" },
       "llm": { "name": "gpt-4o", "provider": "azure-models", "config": "default" },
       "llm-mini": { "name": "gpt-4o-mini", "provider": "azure-models", "config": "default" },
-      "audio": { "name": "whisper", "provider": "openai-models", "config": "preview" },
-      "audio-mini": { "name": "gpt-4o-mini-audio-preview", "provider": "azure-models", "config": "preview" },
+      "stt": { "name": "whisper", "provider": "azure-models", "config": "stt" },
+      "tts-mini": { "name": "gpt-4o-mini-audio-preview", "provider": "azure-models", "config": "preview" },
       "search-mini": { "name": "gpt-4o-mini-search-preview", "provider": "openai-models", "config": "default" }
     },
     "default_model": {"name": "fake", "provider": "fake-models", "config": "default" }
