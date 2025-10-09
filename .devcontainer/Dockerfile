@@ -1,4 +1,4 @@
-FROM python:3.13-slim-bookworm AS commons
+FROM python:3.12-alpine AS commons
 
 ARG POETRY_VERSION=2.0.1
 ARG BUILD_DEPS='build-essential'
