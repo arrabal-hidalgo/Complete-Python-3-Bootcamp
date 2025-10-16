@@ -27,7 +27,7 @@ dependencies = [
     "python-keycloak (>=5.8.1,<5.9.0)",
     "pyyaml (>=6.0.2,<6.1.0)",
     "graypy (>=2.1.0,<2.2.0)",
-    "arcgis (>=2.4.1)" 
+    "arcgis (>=2.4.1)"
 ]
 
 [tool.poetry]
@@ -48,6 +48,7 @@ ruff = "~0.12"
 mypy = "~1.17"
 types-requests = "~2.32"
 bandit = "~1.8"
+segittur-commons = { path = "../segittur_commons", develop = true }
 
 [tool.black]
 line-length = 100
