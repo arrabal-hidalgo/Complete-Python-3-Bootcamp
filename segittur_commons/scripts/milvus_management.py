@@ -57,6 +57,7 @@ def create_milvus_initial_schema(milvus_client: MilvusClient) -> CollectionSchem
     schema.add_field(field_name="pk", datatype=DataType.INT64, is_primary=True, auto_id=True)
     schema.add_field(field_name="name", datatype=DataType.VARCHAR, max_length=1024)
     schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=65535)
+    schema.add_field(field_name="original_content", datatype=DataType.VARCHAR, max_length=65535, nullable=True)
     schema.add_field(
         field_name="classes", datatype=DataType.VARCHAR, max_length=65535, nullable=True
     )
@@ -81,6 +82,29 @@ def create_milvus_initial_schema(milvus_client: MilvusClient) -> CollectionSchem
 
     return schema
 
+# Only works for milvus >= 2.6
+@cli.command(name="update_schema")
+def update_schema(ctx: typer.Context,
+    collection_name: str = typer.Option(DEFAULT_COLLECTION, help="Milvus collection name"),
+    db_name: str = typer.Option(DEFAULT_DATABASE, help="Milvus database name")
+):
+    
+    initial_milvus_client: MilvusClient = ctx.obj.get("initial_milvus_client")
+    initial_milvus_client.use_database(db_name=db_name)
+    current_schema = initial_milvus_client.describe_collection(collection_name)
+    new_schema = create_milvus_initial_schema(initial_milvus_client)
+    current_fields = [field['name'] for field in current_schema["fields"]]
+    new_fields = [field.name for field in new_schema.fields]
+    to_create = [field for field in new_fields if field not in current_fields]
+    for field_name in to_create:
+        field = next(field for field in new_schema.fields if field.name == field_name)
+        initial_milvus_client.add_collection_field(
+                collection_name=collection_name,
+                field_name=field.name,
+                data_type=field.dtype,
+                nullable=field.nullable,
+                **field.params
+        )
 
 @cli.command(name="create_database")
 def create_database(ctx: typer.Context, db_name: str = typer.Option(help="Milvus database name")):
