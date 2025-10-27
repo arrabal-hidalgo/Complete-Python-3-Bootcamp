@@ -11,11 +11,14 @@ class OWLParser:
         # self.ontology.base_iri = f"{uri}#"
         self.main_bussines_classes = main_bussines_classes
 
+    @property
+    def classes(self) -> list:
+        return list(self.ontology.classes())
+
     def get_ontology_main_classes(self) -> list:
-        classes = list(self.ontology.classes())
         return [
             ontology_class
-            for ontology_class in classes
+            for ontology_class in self.classes
             if (
                 len(self.ontology.get_children_of(ontology_class)) > 0
                 and ontology_class.is_a[0].name == "Thing"
@@ -24,10 +27,9 @@ class OWLParser:
         ]
 
     def get_bussines_main_classes(self) -> list:
-        classes = list(self.ontology.classes())
         return [
             ontology_class
-            for ontology_class in classes
+            for ontology_class in self.classes
             if ontology_class.name in self.main_bussines_classes
         ]
 
