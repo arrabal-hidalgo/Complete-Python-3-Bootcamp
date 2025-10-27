@@ -1,10 +1,15 @@
+import json
 from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from arcgis.features import Feature, FeatureSet
-
+from geojson_pydantic.features import Feature as GeoJsonFeature, FeatureCollection
+from geojson_pydantic.geometries import Point, LineString
 from segittur_commons.app.entities.route import RouteResult
-from segittur_commons.app.infrastructure.gis.arcgis_service import ArcGISService
+from segittur_commons.app.infrastructure.gis.arcgis_service import (
+    ArcGISService,
+    PreserveStops,
+)
 
 
 @pytest.fixture
@@ -45,15 +50,25 @@ class TestGeocodeAddresses:
     def test_geocode_addresses_success(self, mock_geocode, arcgis_service):
         """Test successful geocoding of multiple addresses."""
         addresses = ["Address 1", "Address 2"]
+        # Mock the response from arcgis.geocoding.geocode
+        mock_fs1 = MagicMock(spec=FeatureSet)
+        mock_fs1.to_geojson = json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-74.0, 40.7]}, "properties": {"Match_addr": "Address 1"}}]})
+
+        mock_fs2 = MagicMock(spec=FeatureSet)
+        mock_fs2.to_geojson = json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-75.0, 41.7]}, "properties": {"Match_addr": "Address 2"}}]})
+
         mock_geocode.side_effect = [
-            FeatureSet(features=[Feature()]),
-            FeatureSet(features=[Feature()]),
+            mock_fs1,
+            mock_fs2,
         ]
 
         result = arcgis_service.geocode_addresses(addresses)
 
         assert len(result) == 2
-        assert isinstance(result[0], FeatureSet)
+        assert isinstance(result[0], FeatureCollection)
+        assert isinstance(result[0].features[0].geometry, Point)
+        assert result[0].features[0].geometry.coordinates == (-74.0, 40.7)
+        assert result[0].features[0].properties["Match_addr"] == "Address 1"
         mock_geocode.assert_has_calls(
             [
                 call(
@@ -79,14 +94,18 @@ class TestGeocodeAddresses:
     def test_geocode_addresses_no_results_for_one(self, mock_geocode, arcgis_service):
         """Test that the process continues if one address has no matches."""
         addresses = ["Address 1", "Address 2"]
+        mock_fs = MagicMock(spec=FeatureSet)
+        mock_fs.to_geojson = json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-75.0, 41.7]}, "properties": {"Match_addr": "Address 2"}}]})
         mock_geocode.side_effect = [
             None,
-            FeatureSet([Feature()]),
+            mock_fs,
         ]
 
         result = arcgis_service.geocode_addresses(addresses)
 
         assert len(result) == 1
+        assert isinstance(result[0], FeatureCollection)
+        assert result[0].features[0].properties["Match_addr"] == "Address 2"
         mock_geocode.assert_called()
 
     @patch("segittur_commons.app.infrastructure.gis.arcgis_service.geocode")
@@ -95,7 +114,7 @@ class TestGeocodeAddresses:
         addresses = ["Address 1", "Address 2"]
         mock_geocode.side_effect = [
             Exception("API limit reached"),
-            FeatureSet([MagicMock(Feature())]),
+            MagicMock(spec=FeatureSet, to_geojson=json.dumps({"type": "FeatureCollection", "features": []})),
         ]
 
         result = arcgis_service.geocode_addresses(addresses)
@@ -112,31 +131,29 @@ class TestGeocodeAddresses:
 class TestFlattenFeatureSets:
     def test_flatten_featuresets_combines_results(self, arcgis_service):
         """Test that it correctly combines features from multiple FeatureSets."""
-        mock_feature1 = MagicMock(Feature())
-        mock_feature1.attributes = {}
-        mock_feature2 = MagicMock(Feature())
-        mock_feature2.attributes = {}
-        mock_feature3 = MagicMock(Feature())
-        mock_feature3.attributes = {}
+        # Use GeoJSON Pydantic models for testing this method
+        feature1 = GeoJsonFeature(geometry=Point(coordinates=(1,1)), properties={})
+        feature2 = GeoJsonFeature(geometry=Point(coordinates=(2,2)), properties={})
+        feature3 = GeoJsonFeature(geometry=Point(coordinates=(3,3)), properties={})
 
-        fs1 = FeatureSet([mock_feature1])
-        fs2 = FeatureSet([mock_feature2, mock_feature3])
+        fc1 = FeatureCollection(features=[feature1])
+        fc2 = FeatureCollection(features=[feature2, feature3])
 
-        result = arcgis_service.flatten_featuresets([fs1, fs2])
+        result = arcgis_service.flatten_featuresets([fc1, fc2])
 
         assert len(result.features) == 3
-        assert result.features[0].attributes["OBJECTID"] == 1
-        assert result.features[1].attributes["OBJECTID"] == 2
-        assert result.features[2].attributes["OBJECTID"] == 3
+        assert result.features[0].properties["OBJECTID"] == 1
+        assert result.features[1].properties["OBJECTID"] == 2
+        assert result.features[2].properties["OBJECTID"] == 3
+        assert result.features[0] is feature1 # Check object identity
 
     def test_flatten_featuresets_with_empty_and_none(self, arcgis_service):
         """Test that it handles empty or None FeatureSets gracefully."""
-        mock_feature = MagicMock(Feature())
-        mock_feature.attributes = {}
-        fs1 = FeatureSet([mock_feature])
-        fs_empty = FeatureSet([])
+        feature1 = GeoJsonFeature(geometry=Point(coordinates=(1,1)), properties={})
+        fc1 = FeatureCollection(features=[feature1])
+        fc_empty = FeatureCollection(features=[])
 
-        result = arcgis_service.flatten_featuresets([fs1, fs_empty, None])
+        result = arcgis_service.flatten_featuresets([fc1, fc_empty, None])
 
         assert len(result.features) == 1
         assert result.features[0].attributes["OBJECTID"] == 1
@@ -151,27 +168,55 @@ class TestFindOptimalRoute:
     @patch("segittur_commons.app.infrastructure.gis.arcgis_service.find_routes")
     def test_find_optimal_route_success(self, mock_find_routes, arcgis_service):
         """Test successful route finding."""
-        # Simular el resultado de la API como un diccionario, que es lo que Pydantic espera.
-        mock_api_result = {
-            "output_stops": MagicMock(),
-            "output_routes": MagicMock(),
-            "output_directions": MagicMock(),
-        }
-        mock_find_routes.return_value = mock_api_result
+        # Mock the .to_geojson property of the FeatureSet objects returned by the API
+        mock_stops_fs = MagicMock(spec=FeatureSet)
+        mock_stops_fs.to_geojson = json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-74.0, 40.7]}, "properties": {"Name": "Stop 1"}}]})
 
-        stops_data = FeatureSet([MagicMock(Feature()), MagicMock(Feature())])
+        mock_routes_fs = MagicMock(spec=FeatureSet)
+        mock_routes_fs.to_geojson = json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-74.1, 40.8], [-74.2, 40.9]]}, "properties": {"Total_Length": 10.5}}]})
+
+        mock_directions_fs = MagicMock(spec=FeatureSet)
+        mock_directions_fs.to_geojson = json.dumps({"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [-74.05, 40.75]}, "properties": {"text": "Turn left"}}]})
+
+        # Create a mock ToolOutput object that find_routes actually returns
+        mock_tool_output = MagicMock()
+        mock_tool_output.output_stops = mock_stops_fs
+        mock_tool_output.output_routes = mock_routes_fs
+        mock_tool_output.output_directions = mock_directions_fs
+
+        mock_find_routes.return_value = mock_tool_output
+
+        # The input stops_data for find_optimal_route should be a GeoJSON FeatureCollection
+        stops_data = FeatureCollection(features=[
+            GeoJsonFeature(geometry=Point(coordinates=(-74.0, 40.7)), properties={"Name": "Stop 1"}),
+            GeoJsonFeature(geometry=Point(coordinates=(-75.0, 41.7)), properties={"Name": "Stop 2"}),
+        ])
+
         result = arcgis_service.find_optimal_route(stops_data)
 
         assert isinstance(result, RouteResult)
-        assert result.output_stops == mock_api_result["output_stops"]
-        assert result.output_routes == mock_api_result["output_routes"]
-        assert result.output_directions == mock_api_result["output_directions"]
+        assert isinstance(result.output_stops, FeatureCollection)
+        assert len(result.output_stops.features) == 1
+        assert result.output_stops.features[0].properties["Name"] == "Stop 1"
+        assert isinstance(result.output_stops.features[0].geometry, Point)
+        assert result.output_stops.features[0].geometry.coordinates == (-74.0, 40.7)
+
+        assert isinstance(result.output_routes, FeatureCollection)
+        assert len(result.output_routes.features) == 1
+        assert result.output_routes.features[0].properties["Total_Length"] == 10.5
+        assert isinstance(result.output_routes.features[0].geometry, LineString)
+        assert result.output_routes.features[0].geometry.coordinates == [(-74.1, 40.8), (-74.2, 40.9)]
+
+        assert isinstance(result.output_directions, FeatureCollection)
+        assert len(result.output_directions.features) == 1
+        assert result.output_directions.features[0].properties["text"] == "Turn left"
+        assert isinstance(result.output_directions.features[0].geometry, Point)
         mock_find_routes.assert_called_once()
 
     def test_find_optimal_route_insufficient_stops(self, arcgis_service):
         """Test that ValueError is raised for less than two stops."""
-        stops_data_single = FeatureSet([Feature()])
-        stops_data_empty = FeatureSet([])
+        stops_data_single = FeatureCollection(features=[MagicMock(GeoJsonFeature)])
+        stops_data_empty = FeatureCollection(features=[])
 
         with pytest.raises(ValueError, match="At least two stops are required"):
             arcgis_service.find_optimal_route(stops_data_single)
@@ -183,12 +228,12 @@ class TestFindOptimalRoute:
     def test_find_optimal_route_api_error(self, mock_find_routes, arcgis_service, caplog):
         """Test that None is returned and error is logged on API failure."""
         mock_find_routes.side_effect = Exception("Routing service unavailable")
-        stops_data = FeatureSet([Feature(), Feature()])
+        stops_data = FeatureCollection(features=[MagicMock(GeoJsonFeature), MagicMock(GeoJsonFeature)])
 
         result = arcgis_service.find_optimal_route(stops_data)
 
         assert result is None
-        assert "Error calculating route: Routing service unavailable" in caplog.text
+        assert "Error calculating route or processing result: Routing service unavailable" in caplog.text
 
 
 class TestGetNearbyPois:
@@ -197,12 +242,9 @@ class TestGetNearbyPois:
     def test_get_nearby_pois_success(self, mock_intersects, mock_feature_layer_cls, arcgis_service):
         """Test successful query of nearby POIs."""
         # Mock de la geometría y referencia espacial
-        mock_geometry = {"spatialReference": {"wkid": 4326}}
-
-        # Mock del resultado de la ruta
-        mock_route_result = MagicMock(spec=RouteResult)
-        mock_route_result.features = [MagicMock()]
-        mock_route_result.features[0].geometry = mock_geometry
+        mock_point_geometry = Point(coordinates=(-74.0, 40.7))
+        mock_geojson_feature = GeoJsonFeature(geometry=mock_point_geometry, properties={})
+        mock_entity = FeatureCollection(features=[mock_geojson_feature])
 
         # Mock de la instancia de FeatureLayer y su método query
         mock_feature_layer_instance = MagicMock()
@@ -214,7 +256,7 @@ class TestGetNearbyPois:
 
         url = "http://fake-layer.com"
         result = arcgis_service.get_nearby_pois(
-            entity=mock_route_result,
+            entity=mock_entity,
             feature_layer_url=url,
             where_clause="type='restaurant'",
             distance=50,
@@ -222,7 +264,7 @@ class TestGetNearbyPois:
 
         assert result == "Query Result"
         mock_feature_layer_cls.assert_called_once_with(url)
-        mock_intersects.assert_called_once_with(geometry=mock_geometry, sr={"wkid": 4326})
+        mock_intersects.assert_called_once_with(geometry=mock_point_geometry.model_dump())
         mock_feature_layer_instance.query.assert_called_once_with(
             where="type='restaurant'",
             distance=50,
@@ -234,18 +276,27 @@ class TestGetNearbyPois:
 
     def test_get_nearby_pois_no_feature_layer_url(self, arcgis_service):
         """Test that ValueError is raised if feature_layer_url is missing."""
+        mock_entity = FeatureCollection(features=[MagicMock(GeoJsonFeature)])
         with pytest.raises(ValueError, match="No feature_layer_url provided"):
-            arcgis_service.get_nearby_pois(entity=MagicMock())
+            arcgis_service.get_nearby_pois(entity=mock_entity)
 
     def test_get_nearby_pois_invalid_route_result(self, arcgis_service, caplog):
         """Test that it returns None for an invalid or empty route result."""
         url = "http://fake-layer.com"
 
         # Caso 1: entity es None
-        result_none = arcgis_service.get_nearby_pois(entity=None, feature_layer_url=url)
-        assert result_none is None
-        assert "Cannot get nearby POIs from an empty or invalid entity" in caplog.text
+        with pytest.raises(AttributeError): # Pydantic model will raise error if None
+             arcgis_service.get_nearby_pois(entity=None, feature_layer_url=url)
 
         # Caso 2: entity no tiene features
-        result_empty = arcgis_service.get_nearby_pois(entity=FeatureSet([]), feature_layer_url=url)
+        result_empty = arcgis_service.get_nearby_pois(entity=FeatureCollection(features=[]), feature_layer_url=url)
         assert result_empty is None
+        assert "Cannot get nearby POIs from an empty or invalid entity" in caplog.text
+
+    def test_get_nearby_pois_non_point_geometry(self, arcgis_service, caplog):
+        """Test that it returns None if the entity's geometry is not a PointGeometry."""
+        mock_linestring_geom = LineString(coordinates=[(1,1), (2,2)])
+        mock_entity = FeatureCollection(features=[GeoJsonFeature(geometry=mock_linestring_geom, properties={})])
+        result = arcgis_service.get_nearby_pois(entity=mock_entity, feature_layer_url="http://fake.com")
+        assert result is None
+        assert "Expected a GeoJSON Point geometry for nearby POIs query" in caplog.text
