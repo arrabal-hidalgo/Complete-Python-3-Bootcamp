@@ -116,11 +116,11 @@ def main(ctx: typer.Context):
 
 @cli.command(name="export")
 def export_prompts(
+    ctx: typer.Context,
     output_path: str = typer.Option(None, help="Path to save the exported prompts"),
     prompts_to_export: str = typer.Option(
         "", help="Comma-separated list of prompts to export. e.g. 'prompt1,prompt2'"
     ),
-    ctx=typer.Context,
 ):
     prompts = get_prompts(ctx.obj.get("langfuse"), get_list_prompts_from_str(prompts_to_export))
     with open(output_path, "w", encoding="utf-8") as file:
@@ -132,11 +132,11 @@ def export_prompts(
 
 @cli.command(name="import")
 def import_prompts(
+    ctx: typer.Context,
     input_path: str = typer.Option(None, help="Path to import the exported prompts"),
     prompts_to_import: str = typer.Option(
         "", help="Comma-separated list of prompts to import. e.g. 'prompt1,prompt2'"
     ),
-    ctx=typer.Context,
 ):
     prompts_list = get_list_prompts_from_str(prompts_to_import)
     old_prompts_versions = get_prompt_versions(ctx.obj.get("langfuse"), prompts_list)

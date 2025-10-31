@@ -80,8 +80,8 @@ def main(ctx: typer.Context):
 
 @cli.command(name="export")
 def export_datasets(
+    ctx: typer.Context,
     output_path: str = typer.Option(None, help="Directory path to save the exported datasets"),
-    ctx=typer.Context,
 ):
     datasets = get_datasets(ctx.obj.get("langfuse"))
     for dataset, items in datasets.items():
@@ -90,8 +90,8 @@ def export_datasets(
 
 @cli.command(name="import")
 def import_datasets(
+    ctx: typer.Context,
     input_path: str = typer.Option(None, help="Directory path to import the exported datasets"),
-    ctx=typer.Context,
 ):
     file_paths = glob.glob(f"{input_path}/*.csv")
 
