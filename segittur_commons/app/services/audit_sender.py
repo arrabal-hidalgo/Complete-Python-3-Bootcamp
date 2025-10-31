@@ -8,7 +8,6 @@ AUDIT_HOST = os.getenv("AUDIT_HOST")
 LOG_AUDIT_STREAM = os.getenv("LOG_AUDIT_STREAM", "segittur_audit")
 
 
-
 async def send_audit_log(audit_entry: Dict[str, Any]):
     if AUDIT_HOST:
         async with httpx.AsyncClient() as client:
