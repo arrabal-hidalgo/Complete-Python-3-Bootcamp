@@ -18,7 +18,7 @@ dependencies = [
     "langchain-text-splitters (>=0.3.0,<0.4.0)",
     "langchain-milvus (>=0.2.0,<0.3.0)",
     "langfuse (>=3.6.1)",
-    "owlready2 (=0.48)",
+    "owlready2 (==0.48)",
     "typer (>=0.15.1,<0.16.0)",
     "pydantic-settings (>=2.0,<3.0)",
     "azure-storage-blob (>=12.25.1,<12.26.0)",
