@@ -31,7 +31,7 @@ class Node(ABC, Generic[TAgent]):
         raise NotImplementedError
 
     def get_path(self, state: BaseModel) -> str:
-        return self.get_router(state).value
+        return self.get_router(state).value  # type: ignore[no-any-return]
 
     @abstractmethod
     def call(self, state: BaseModel):
