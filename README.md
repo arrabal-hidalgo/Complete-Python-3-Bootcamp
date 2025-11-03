@@ -36,6 +36,14 @@ To open the project in **devContainer**, please execute the following steps:
 
 https://gitlab.sngular.com/help/user/packages/workflows/build_packages.md#create-a-pypi-package
 
+0. Change version to development version in `pyproject.toml`.
+For example, if **version=1.0.0** and **dev_version=3**:
+```
+[project]
+name = "segittur-commons"
+version = "1.0.0-rc3"
+```
+
 1. Install the package *build* library:
 ```bash
 pip install build
@@ -48,10 +56,10 @@ python -m build
 
 3. The output should be visible in a newly-created dist folder:
 ```bash
-ls dist
+ls dist/*-1.0.0rc3*
 ```
 ```bash
-segittur_commons-<version>-py3-none-any.whl segittur_commons-<version>.tar.gz
+segittur_commons-1.0.0rc3-py3-none-any.whl segittur_commons-1.0.0rc3.tar.gz
 ```
 
 ## Publish PyPI package to the package registry
@@ -69,7 +77,7 @@ pip install twine
 
 4. Upload your package with twine:
 ```bash
-python3 -m twine upload --repository gitlab --config-file .pypirc dist/*
+python3 -m twine upload --repository gitlab --config-file .pypirc dist/*-1.0.0rc3*
 ```
 When a package is published successfully, a message like this is displayed:
 ```bash
