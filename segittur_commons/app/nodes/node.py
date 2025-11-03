@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
 
-from langchain_core.runnables import RunnableSequence
+from langchain_core.runnables import RunnableSerializable
 from pydantic import BaseModel
 
 from segittur_commons.app.agents.agent import Agent
@@ -21,7 +21,7 @@ class Node(ABC, Generic[TAgent]):
         self.agent: TAgent = self.agent_class(llm, **agent_params)
 
     @property
-    def chain(self) -> RunnableSequence:
+    def chain(self) -> RunnableSerializable:
         return self.agent.chain
 
     def _get_llm(self, model: str, **model_params) -> Any:

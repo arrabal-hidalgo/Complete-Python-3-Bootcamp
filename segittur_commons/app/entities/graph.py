@@ -6,4 +6,6 @@ class NodeType(str, Enum):
 
 
 class PromptType(str, Enum):
-    pass
+
+    def __str__(self):
+        return self.value
