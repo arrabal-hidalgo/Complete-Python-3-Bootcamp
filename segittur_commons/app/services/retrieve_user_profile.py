@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 import requests
 
@@ -8,7 +9,7 @@ from segittur_commons.app.entities.user_profile import (
 )
 
 
-def fetch_user_profile(endpoint: str, identifier: str) -> dict | None:
+def fetch_user_profile(endpoint: str, identifier: str) -> dict[str, Any] | None:
     """Fetches a user profile from the API given an endpoint and an identifier."""
     base_url = os.getenv("S5_USER_PROFILE_API_URL")
     token = os.getenv("S5_API_TOKEN")
@@ -17,13 +18,14 @@ def fetch_user_profile(endpoint: str, identifier: str) -> dict | None:
     headers = {"accept": "application/json", "Authorization": f"Bearer {token}"}
 
     try:
-        response = requests.get(url, headers=headers, allow_redirects=True)
+        response = requests.get(url, headers=headers, allow_redirects=True, timeout=10)
 
         if not response.text.strip():
             return None
 
         response.raise_for_status()
-        return response.json()
+        data: dict[str, Any] = response.json()
+        return data
 
     except requests.exceptions.HTTPError as e:
         raise RuntimeError(f"HTTP error retrieving user profile from {endpoint}: {e}") from e
