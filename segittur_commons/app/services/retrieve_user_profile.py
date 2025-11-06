@@ -27,7 +27,6 @@ def fetch_user_profile(endpoint: str, identifier: str) -> dict | None:
 
     except requests.exceptions.HTTPError as e:
         raise RuntimeError(f"HTTP error retrieving user profile from {endpoint}: {e}") from e
-        return None
     except ValueError:
         raise RuntimeError(f"Invalid JSON response from {endpoint}")
 
