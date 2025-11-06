@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from pydantic import BaseModel
 
@@ -14,4 +14,4 @@ class AuthenticatedUser(BaseModel):
     anonymous: bool
     token: str | None = None
     # List of (role, destination) tuples. Destination is None for global roles.
-    roles: List[Tuple[str, Optional[str]]] = []
+    roles: List[Tuple[str, str | None]] = []

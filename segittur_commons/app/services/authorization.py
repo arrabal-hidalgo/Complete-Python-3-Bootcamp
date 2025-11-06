@@ -1,5 +1,3 @@
-from typing import Optional
-
 import casbin
 
 from segittur_commons.app.entities.user import AuthenticatedUser
@@ -19,7 +17,7 @@ class CasbinAuthorizer:
         user: AuthenticatedUser,
         path: str,
         method: str,
-        resource_destination: Optional[str] = None,
+        resource_destination: str | None = None,
     ) -> bool:
         """
         Checks if the user has permission to access the resource.

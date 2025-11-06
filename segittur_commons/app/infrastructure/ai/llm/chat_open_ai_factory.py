@@ -1,12 +1,10 @@
 import os
-from typing import Optional
-from pydantic import Field
-
-
-from segittur_commons.app.infrastructure.ai.llm.ai_factory import AIFactory
 
 from langchain_core.language_models import BaseChatModel
 from langchain_openai import ChatOpenAI
+from pydantic import Field
+
+from segittur_commons.app.infrastructure.ai.llm.ai_factory import AIFactory
 
 
 class ChatOpenAIFactory(AIFactory):
@@ -15,7 +13,7 @@ class ChatOpenAIFactory(AIFactory):
         self,
         model_name,
         temperature=0.5,
-        max_tokens: Optional[int] = Field(default=None),
+        max_tokens: int | None = Field(default=None),
         model_config={},
         model_kwargs={},
     ) -> BaseChatModel:
