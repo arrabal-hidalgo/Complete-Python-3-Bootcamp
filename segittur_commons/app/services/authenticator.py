@@ -43,7 +43,7 @@ class RegisteredUserParser(UserParser):
             for role_name in role_info.get("roles", []):
                 parsed_roles.append((role_name, destination))
 
-        return AuthenticatedUser(id=user_id, anonymous=False, roles=parsed_roles)
+        return AuthenticatedUser(id=user_id, roles=parsed_roles)
 
 
 class Authenticator:

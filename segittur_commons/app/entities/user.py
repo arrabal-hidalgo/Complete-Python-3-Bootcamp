@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -10,8 +11,7 @@ class AuthenticatedUser(BaseModel):
     """
 
     id: str | None = None
-    ref: str | None = None
-    anonymous: bool
+    session: UUID | None = None
     token: str | None = None
     # List of (role, destination) tuples. Destination is None for global roles.
     roles: List[Tuple[str, str | None]] = []
