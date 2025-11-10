@@ -31,6 +31,7 @@ class CasbinAuthorizer:
             for user_role, _ in user.roles:
                 if self.enforcer.enforce(user_role, "*", path, method):
                     return True  # Permission granted
+            return False
 
         for user_role, user_destination in user.roles:
             # Case 1: Destination-specific role assignment (e.g., GESTOR_DESTINO in GRANADA)
