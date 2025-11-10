@@ -1,5 +1,5 @@
 from itertools import cycle
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.language_models import GenericFakeChatModel
 from langchain_core.language_models.base import LanguageModelInput
@@ -51,8 +51,8 @@ class FakeOpenAI(ChatOpenAI):
     def invoke(
         self,
         input: LanguageModelInput,
-        config: Optional[RunnableConfig] = None,
-        stop: Optional[list[str]] = None,
+        config: RunnableConfig | None = None,
+        stop: list[str] | None = None,
         **kwargs: Any,
     ) -> BaseMessage:
         return FakeLLM.CHAT.invoke("random")
