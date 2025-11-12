@@ -57,7 +57,7 @@ class OWLParser:
                 ]
             )
             restrictions = restrictions + self._extract_primitives(new_restrictions)
-            current_parents = new_parents + restrictions_parents
+            current_parents = list(set(new_parents + restrictions_parents) - set(parents))
             parents = parents + current_parents
 
         for parent in parents:
