@@ -17,8 +17,8 @@ class Node(ABC, Generic[TAgent]):
 
     def __init__(self, model: str, model_params: dict = {}, agent_params: dict = {}):
         self.model: str = model
-        llm = self._get_llm(self.model, **model_params)
-        self.agent: TAgent = self.agent_class(llm, **agent_params)
+        self.llm = self._get_llm(self.model, **model_params)
+        self.agent: TAgent = self.agent_class(self.llm, **agent_params)
 
     @property
     def chain(self) -> RunnableSerializable:
