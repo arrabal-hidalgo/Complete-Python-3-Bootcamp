@@ -13,7 +13,7 @@ variables:
 
 code_quality:
   stage: analysis
-  image: python:3.11
+  image: python:3.12
   # tags:
   #  - daiot-cluster
   before_script:
@@ -28,7 +28,7 @@ code_quality:
 
 code_security:
   stage: analysis
-  image: python:3.11
+  image: python:3.12
   # tags:
   #  - daiot-cluster
   before_script:
@@ -59,7 +59,7 @@ dependencies_security:
 
 unit_tests:
   stage: testing
-  image: python:3.11
+  image: python:3.12
   # tags:
   #  - daiot-cluster
   when: always
@@ -89,7 +89,7 @@ unit_tests:
 
 build-and-publish:
   stage: deploy
-  image: python:3.11-slim
+  image: python:3.12-slim
   # tags:
   #  - daiot-cluster
   rules:
