@@ -19,18 +19,10 @@ from geojson_pydantic.features import Feature as GeoJsonFeature
 from geojson_pydantic.features import FeatureCollection
 from geojson_pydantic.geometries import Point
 
-from segittur_commons.app.entities.route import RouteResult
+from segittur_commons.app.entities.route import RouteResponse
+from segittur_commons.app.enums import PreserveStops
 
 logger = logging.getLogger(__name__)
-
-
-class PreserveStops(str, Enum):
-    """Options for preserving terminal stops in route calculation."""
-
-    NONE = "Preserve None"
-    START = "Preserve First"
-    END = "Preserve Last"
-    BOTH = "Preserve Both"
 
 
 class ArcGISService:
@@ -132,7 +124,9 @@ class ArcGISService:
         time_of_day: Optional[int] = None,
         time_zone_for_time_of_day: str = "UTC",
         preserve_terminal_stops: PreserveStops = PreserveStops.NONE,
-    ) -> Optional[RouteResult]:
+        travel_mode: Optional[str] = None,
+        **arcgis_route_params: Any,
+    ) -> Optional[RouteResponse]:
         """
         Finds the optimal route between a series of geocoded stops.
 
@@ -141,6 +135,8 @@ class ArcGISService:
             time_of_day (Optional[int]): Start time in milliseconds since epoch. Defaults to current time.
             time_zone_for_time_of_day (str): Time zone for the start time. Defaults to "UTC".
             preserve_terminal_stops (PreserveStops): Whether to preserve start/end stops.
+            travel_mode (Optional[str]): The travel mode to use for the route calculation (e.g., 'Driving Time').
+            arcgis_route_params (Any): Additional parameters to pass directly to the arcgis.network.analysis.find_routes function.
 
         Returns:
             RouteResult: Route details including stops, routes, and directions.
@@ -163,21 +159,28 @@ class ArcGISService:
         arcgis_stops_fs = FeatureSet.from_geojson(geojson_dict)
 
         try:
-            result = find_routes(
-                arcgis_stops_fs,
-                time_of_day=current_time_ms,
-                time_zone_for_time_of_day=time_zone_for_time_of_day,
-                preserve_terminal_stops=preserve_terminal_stops.value,
-            )
+            params = {
+                "stops": arcgis_stops_fs,
+                "time_of_day": current_time_ms,
+                "time_zone_for_time_of_day": time_zone_for_time_of_day,
+                "preserve_terminal_stops": preserve_terminal_stops.value,
+                "populate_directions": False,
+                **arcgis_route_params,
+            }
 
-            return RouteResult(
+            if travel_mode:
+                params["travel_mode"] = travel_mode
+
+            result = find_routes(**params)
+
+            return RouteResponse(
                 output_stops=FeatureCollection.model_validate_json(result.output_stops.to_geojson),
                 output_routes=FeatureCollection.model_validate_json(
                     result.output_routes.to_geojson
                 ),
-                output_directions=FeatureCollection.model_validate_json(
-                    result.output_direction_lines.to_geojson
-                ),
+                # output_directions=FeatureCollection.model_validate_json(
+                #    result.output_direction_lines.to_geojson
+                # ),
             )
 
         except (ValidationError, AttributeError, Exception) as e:
@@ -202,8 +205,7 @@ class ArcGISService:
 
         feature_layer = FeatureLayer(feature_layer_url)
 
-        # Convert our Pydantic geometry back to a dictionary for the ArcGIS API
-        # Ensure we are dealing with a Point geometry for querying nearby POIs
+        # Convert Pydantic geometry back to a dictionary for the ArcGIS API
         if not (entity.features and isinstance(entity.features[0].geometry, Point)):
             logger.error(
                 "Expected a GeoJSON Point geometry for nearby POIs query, but received a different type or empty entity."
@@ -212,9 +214,7 @@ class ArcGISService:
 
         geometry_dict = entity.features[0].geometry.model_dump()
 
-        # The ArcGIS API expects a Geometry object or a dictionary.
         geometry = geometry_dict
-        # GeoJSON does not have a spatialReference field, ArcGIS API assumes WGS84 (4326) for GeoJSON dicts.
         result_query = feature_layer.query(
             where=where_clause,
             distance=distance,
