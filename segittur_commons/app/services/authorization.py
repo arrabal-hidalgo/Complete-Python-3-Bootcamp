@@ -1,5 +1,3 @@
-from typing import Optional
-
 import casbin
 
 from segittur_commons.app.entities.user import AuthenticatedUser
@@ -19,7 +17,7 @@ class CasbinAuthorizer:
         user: AuthenticatedUser,
         path: str,
         method: str,
-        resource_destination: Optional[str] = None,
+        resource_destination: str | None = None,
     ) -> bool:
         """
         Checks if the user has permission to access the resource.
@@ -33,6 +31,7 @@ class CasbinAuthorizer:
             for user_role, _ in user.roles:
                 if self.enforcer.enforce(user_role, "*", path, method):
                     return True  # Permission granted
+            return False
 
         for user_role, user_destination in user.roles:
             # Case 1: Destination-specific role assignment (e.g., GESTOR_DESTINO in GRANADA)

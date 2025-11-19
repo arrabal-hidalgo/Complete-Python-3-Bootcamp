@@ -27,7 +27,7 @@
             "program": "${workspaceFolder}/segittur_commons/scripts/prompt_migration.py",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.devcontainer/.env",
-            "args": ["export", "--output-path", "initial_prompts.yaml"],
+            "args": ["export", "--output-path", "initial_prompts.json"],
         },
         {
             "name": "export_some_prompts",
@@ -36,7 +36,7 @@
             "program": "${workspaceFolder}/segittur_commons/scripts/prompt_migration.py",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.devcontainer/.env",
-            "args": ["export", "--output-path", "some_prompts.yaml", "--prompts-to-export", "${command:pickArgs}"],
+            "args": ["export", "--output-path", "some_prompts.json", "--prompts-to-export", "${command:pickArgs}"],
         },
         {
             "name": "import_all_prompts",
@@ -45,7 +45,7 @@
             "program": "${workspaceFolder}/segittur_commons/scripts/prompt_migration.py",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.devcontainer/.env",
-            "args": ["import", "--input-path", "initial_prompts.yaml"],
+            "args": ["import", "--input-path", "initial_prompts.json"],
         },
         {
             "name": "import_some_prompts",
@@ -54,7 +54,7 @@
             "program": "${workspaceFolder}/segittur_commons/scripts/prompt_migration.py",
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.devcontainer/.env",
-            "args": ["import", "--input-path", "initial_prompts.yaml", "--prompts-to-import", "${command:pickArgs}"],
+            "args": ["import", "--input-path", "initial_prompts.json", "--prompts-to-import", "${command:pickArgs}"],
         }
     ]
 }

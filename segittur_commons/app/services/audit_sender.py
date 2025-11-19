@@ -1,10 +1,11 @@
-import os
-import httpx
 import logging
-from typing import Dict, Any
+import os
+from typing import Any, Dict
 
+import httpx
 
 AUDIT_HOST = os.getenv("AUDIT_HOST")
+LOG_AUDIT_STREAM = os.getenv("LOG_AUDIT_STREAM", "segittur_audit")
 
 
 async def send_audit_log(audit_entry: Dict[str, Any]):

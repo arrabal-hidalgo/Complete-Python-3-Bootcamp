@@ -1,8 +1,7 @@
 import os
-from typing import Dict, List, Type, cast
+from typing import Dict, List, Type
 
 from langchain_core.documents import Document
-from langchain_core.embeddings import Embeddings
 from langchain_milvus import Milvus
 from langchain_text_splitters.base import TS, TextSplitter
 from pymilvus import AsyncMilvusClient, MilvusClient
@@ -30,9 +29,7 @@ class MilvusHandler:
         self.db = db or os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
         self.collection = collection or os.getenv("MILVUS_COLLECTION", "general_vectorstore")
 
-        self.embeddings_fn = cast(
-            Embeddings, LlmProvider.create_llm(model=model_embeddings, **kwargs_model)
-        )
+        self.embeddings_fn = LlmProvider.create_llm(model=model_embeddings, **kwargs_model)
 
         self.vector_store = Milvus(
             embedding_function=self.embeddings_fn,
@@ -59,9 +56,9 @@ class MilvusHandler:
     ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
         docs: List[Document] = (
-            text_splitter.create_documents(cast(List[str], texts), metadatas)
+            text_splitter.create_documents(texts, metadatas)
             if isinstance(texts[0], str)
-            else text_splitter.split_documents(cast(List[Document], texts))
+            else text_splitter.split_documents(texts)
         )
         return docs
 
@@ -92,7 +89,7 @@ class MilvusHandler:
         # If texts are in the desired format (Document objects)
         # and no splitting is required, we can return them directly.
         if not text_splitter_fn and isinstance(texts[0], Document):
-            return cast(List[Document], texts)
+            return texts
 
         # If a splitter is provided, delegate the processing.
         if text_splitter_fn:
@@ -102,7 +99,7 @@ class MilvusHandler:
         _metadatas = (metadatas or [{}]) * len(texts)
         return [
             Document(page_content=text, metadata=metadata)
-            for text, metadata in zip(cast(List[str], texts), _metadatas)
+            for text, metadata in zip(texts, _metadatas)
         ]
 
     def add_documents(

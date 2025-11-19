@@ -4,11 +4,11 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "segittur-commons"
-version = "0.2.16"
+version = "0.3.5"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
   { name = "Alejandro Arrabal Hidalgo", email = "alejandro.arrabal@sngular.com" },
-  { name = "Sofía Cerdá Muñoz", email = "sofia.cerda@sngular.com" },  
+  { name = "Sofía Cerdá Muñoz", email = "sofia.cerda@sngular.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
@@ -17,7 +17,8 @@ dependencies = [
     "langchain-openai (>=0.3.32,<0.4.0)",
     "langchain-text-splitters (>=0.3.0,<0.4.0)",
     "langchain-milvus (>=0.2.0,<0.3.0)",
-    "langfuse (>=2.60.10,<3.0.0)",
+    "langfuse (>=3.6.1)",
+    "owlready2 (==0.48)",
     "typer (>=0.15.1,<0.16.0)",
     "pydantic-settings (>=2.0,<3.0)",
     "azure-storage-blob (>=12.25.1,<12.26.0)",
@@ -37,18 +38,27 @@ package-mode = true
 packages = [{ include = "segittur_commons" }]
 
 [tool.poetry.group.dev.dependencies]
-black = "~25.1"
-pylint = "~3.3"
-coverage = "~7.6"
-pytest = "~8.3"
-pytest-cov = "~6.1"
-pytest-asyncio = "~0.25"
-factory-boy = "~3.3"
 pip-audit = "~2.9"
-ruff = "~0.12"
-mypy = "~1.17"
-types-requests = "~2.32"
-bandit = "~1.8"
+pytest = "~8.3"
+pytest-asyncio = "~0.25"
+pytest-cov = "~6.1"
+coverage = "~7.6"
+factory-boy = "~3.3"
+
+[tool.poetry.group.quality]
+optional = true
+
+[tool.poetry.group.quality.dependencies]
+ruff = "*"
+mypy = "*"
+black = "*"
+types-requests = "*"
+
+[tool.poetry.group.security]
+optional = true
+
+[tool.poetry.group.security.dependencies]
+bandit = "*"
 
 [tool.black]
 line-length = 100
@@ -67,7 +77,7 @@ profile = "black"
 testpaths = [ "tests" ]
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true

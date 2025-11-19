@@ -1,5 +1,5 @@
 from itertools import cycle
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.language_models import GenericFakeChatModel
 from langchain_core.language_models.base import LanguageModelInput
@@ -10,10 +10,7 @@ from langchain_openai import ChatOpenAI
 
 class FakeLLM:
 
-    FAKE_MSG = """if you want use a real LLM model you have to set the models config file:
-                    MODEL_CONFIG_FILE=segittur_commons/config/models_[env].json
-                    OPENAI_API_KEY=sk-your-llm-api-key
-                """
+    FAKE_MSG = "if you want use a real LLM model you have to set the models config file: MODEL_CONFIG_FILE=segittur_commons/config/models_[env].json, OPENAI_API_KEY=sk-your-llm-api-key"
 
     CHAT = GenericFakeChatModel(
         messages=cycle(
@@ -45,11 +42,20 @@ class FakeLLM:
 
 class FakeOpenAI(ChatOpenAI):
 
+    class Transcription:
+
+        @property
+        def text(self) -> str:
+            return FakeLLM.FAKE_MSG
+
     def invoke(
         self,
         input: LanguageModelInput,
-        config: Optional[RunnableConfig] = None,
-        stop: Optional[list[str]] = None,
+        config: RunnableConfig | None = None,
+        stop: list[str] | None = None,
         **kwargs: Any,
     ) -> BaseMessage:
         return FakeLLM.CHAT.invoke("random")
+
+    def create(self, model, file):
+        return self.Transcription()

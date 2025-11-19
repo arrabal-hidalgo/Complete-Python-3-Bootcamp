@@ -3,10 +3,8 @@ from pathlib import Path
 from typing import Any, Union
 
 import typer
-import yaml
-from langfuse import Langfuse
-from langfuse.api import ChatMessage, CreatePromptRequest_Chat, CreatePromptRequest_Text
-from langfuse.callback import CallbackHandler
+import yaml  # type: ignore
+from langfuse import Langfuse, get_client
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,8 +23,13 @@ class ChatPrompt(BaseModel):
     content: str
 
 
+class Placeholder(BaseModel):
+    name: str
+    type: str
+
+
 class PromptModel(BaseModel):
-    prompt: Union[str, list[ChatPrompt]]
+    prompt: Union[str, list[Union[ChatPrompt, Placeholder]]]
     name: str
     version: int
     config: dict
@@ -36,16 +39,14 @@ class PromptModel(BaseModel):
 
 
 def check_langfuse_connection(langfuse: Langfuse):
-    langfuse_callback_handler = CallbackHandler()
     try:
         langfuse.auth_check()
-        langfuse_callback_handler.auth_check()
     except Exception as e:
         typer.echo(f"Auth check failed. Please check your credentials and config. Error: {e}")
         raise typer.Exit()
 
 
-def clean_prompts(prompts: list[PromptModel]) -> list[dict[Any, Any]]:
+def clean_prompts(prompts: list[dict[str, Any]]) -> list[dict[Any, Any]]:
     return [
         {key: value for key, value in prompt.items() if key in PromptModel.model_fields}
         for prompt in prompts
@@ -59,21 +60,23 @@ def get_list_prompts_from_str(list_arg: str) -> list[str]:
 
 
 def get_prompts(langfuse: Langfuse, prompts: list[str] = []) -> list[dict[str, str]]:
-    prompts_client = langfuse.client.prompts
+    prompts_client = langfuse.api.prompts
     list_prompts = prompts_client.list(limit=60).data
     prompts_with_names = []
     for prompt in list_prompts:
         if prompt.name in prompts or not prompts:
             prompt_versions = [
-                prompts_client.get(prompt_name=prompt.name, version=prompt_version).dict()
+                prompts_client.get(
+                    prompt_name=prompt.name.replace("/", "%2F"), version=prompt_version
+                ).dict()
                 for prompt_version in prompt.versions
             ]
             prompts_with_names.extend(prompt_versions)
     return clean_prompts(prompts_with_names)
 
 
-def get_prompt_versions(langfuse: Langfuse, prompts: list[str] = []) -> list[dict[str, str]]:
-    prompts_client = langfuse.client.prompts
+def get_prompt_versions(langfuse: Langfuse, prompts: list[str] = []) -> dict[str, list[int]]:
+    prompts_client = langfuse.api.prompts
     list_prompts = prompts_client.list(limit=60).data
     return {
         prompt.name: prompt.versions
@@ -83,27 +86,19 @@ def get_prompt_versions(langfuse: Langfuse, prompts: list[str] = []) -> list[dic
 
 
 def create_prompt(langfuse: Langfuse, prompt: PromptModel):
-    prompts_client = langfuse.client.prompts
-    if prompt.type == "text":
-        prompt_request = CreatePromptRequest_Text(
-            name=prompt.name,
-            prompt=prompt.prompt,
-            config=prompt.config,
-            labels=prompt.labels,
-            tags=prompt.tags,
-        )
-    else:
-        prompt_request = CreatePromptRequest_Chat(
-            name=prompt.name,
-            prompt=[
-                ChatMessage(role=chat_prompt.role, content=chat_prompt.content)
-                for chat_prompt in prompt.prompt
-            ],
-            config=prompt.config,
-            labels=prompt.labels,
-            tags=prompt.tags,
-        )
-    prompts_client.create(request=prompt_request)
+    content = (
+        prompt.prompt
+        if prompt.type == "text"
+        else [prompt_object.model_dump() for prompt_object in prompt.prompt]  # type: ignore
+    )
+    langfuse.create_prompt(  # type: ignore
+        type=prompt.type,
+        name=prompt.name,
+        prompt=content,
+        config=prompt.config,
+        labels=prompt.labels,
+        tags=prompt.tags,
+    )
 
 
 def create_prompts(langfuse: Langfuse, prompts: list[PromptModel]):
@@ -114,18 +109,18 @@ def create_prompts(langfuse: Langfuse, prompts: list[PromptModel]):
 @cli.callback()
 def main(ctx: typer.Context):
     ctx.ensure_object(dict)
-    langfuse = Langfuse()
+    langfuse = get_client()
     check_langfuse_connection(langfuse)
     ctx.obj["langfuse"] = langfuse
 
 
 @cli.command(name="export")
 def export_prompts(
+    ctx: typer.Context,
     output_path: str = typer.Option(None, help="Path to save the exported prompts"),
     prompts_to_export: str = typer.Option(
         "", help="Comma-separated list of prompts to export. e.g. 'prompt1,prompt2'"
     ),
-    ctx: typer.Context = typer.Context,
 ):
     prompts = get_prompts(ctx.obj.get("langfuse"), get_list_prompts_from_str(prompts_to_export))
     with open(output_path, "w", encoding="utf-8") as file:
@@ -137,11 +132,11 @@ def export_prompts(
 
 @cli.command(name="import")
 def import_prompts(
+    ctx: typer.Context,
     input_path: str = typer.Option(None, help="Path to import the exported prompts"),
     prompts_to_import: str = typer.Option(
         "", help="Comma-separated list of prompts to import. e.g. 'prompt1,prompt2'"
     ),
-    ctx: typer.Context = typer.Context,
 ):
     prompts_list = get_list_prompts_from_str(prompts_to_import)
     old_prompts_versions = get_prompt_versions(ctx.obj.get("langfuse"), prompts_list)
@@ -161,5 +156,5 @@ def import_prompts(
 
 
 if __name__ == "__main__":
-    settings = Settings(_env_file=".env", _env_file_encoding="utf-8")
+    settings = Settings(_env_file=".env", _env_file_encoding="utf-8")  # type: ignore
     cli()

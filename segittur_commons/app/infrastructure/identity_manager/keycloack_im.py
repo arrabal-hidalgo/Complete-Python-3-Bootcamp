@@ -1,6 +1,7 @@
 import base64
 import json
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union
+
 from keycloak.exceptions import KeycloakPostError, raise_error_from_response
 from keycloak.keycloak_openid import URL_TOKEN, KeycloakOpenID
 
@@ -58,7 +59,7 @@ class KeycloakIm:
         self,
         grant_type: str = "urn:ietf:params:oauth:grant-type:uma-ticket",
         audience: str = "account",
-        claims: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = None,
+        claims: Union[Dict[str, Any], List[Dict[str, Any]]] | None = None,
     ) -> Any:
         params_path = {"realm-name": self.realm_name}
         payload = {

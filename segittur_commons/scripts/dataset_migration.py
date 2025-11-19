@@ -6,7 +6,6 @@ from dataclasses import dataclass, field
 
 import typer
 from langfuse import Langfuse
-from langfuse.callback import CallbackHandler
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -28,16 +27,16 @@ class DatasetItem:
 
 
 def check_langfuse_connection(langfuse: Langfuse):
-    langfuse_callback_handler = CallbackHandler()
     try:
         langfuse.auth_check()
-        langfuse_callback_handler.auth_check()
     except Exception as e:
-        raise typer.Exit(f"Auth check failed. Please check your credentials and config. Error: {e}")
+        raise typer.Abort(
+            f"Auth check failed. Please check your credentials and config. Error: {e}"
+        )
 
 
 def get_datasets(langfuse: Langfuse) -> dict[str, list]:
-    datasets_client = langfuse.client.datasets
+    datasets_client = langfuse.api.datasets
     datasets = datasets_client.list(limit=60).data
     data = {}
     for dataset in datasets:
@@ -47,9 +46,13 @@ def get_datasets(langfuse: Langfuse) -> dict[str, list]:
 
 
 def get_dataset_items(langfuse: Langfuse, dataset) -> list[DatasetItem]:
-    datasets_items_client = langfuse.client.dataset_items
+    datasets_items_client = langfuse.api.dataset_items
     items = datasets_items_client.list(dataset_name=dataset.name, limit=100).data
-    return [DatasetItem(input=item.input, expected_output=item.expected_output) for item in items]
+    return [
+        DatasetItem(input=item.input, expected_output=item.expected_output)
+        for item in items
+        if item.input and item.expected_output
+    ]
 
 
 def create_csv_for_items(dataset_name, items: list[DatasetItem], dir: str):
@@ -77,8 +80,8 @@ def main(ctx: typer.Context):
 
 @cli.command(name="export")
 def export_datasets(
+    ctx: typer.Context,
     output_path: str = typer.Option(None, help="Directory path to save the exported datasets"),
-    ctx: typer.Context = typer.Context,
 ):
     datasets = get_datasets(ctx.obj.get("langfuse"))
     for dataset, items in datasets.items():
@@ -87,8 +90,8 @@ def export_datasets(
 
 @cli.command(name="import")
 def import_datasets(
+    ctx: typer.Context,
     input_path: str = typer.Option(None, help="Directory path to import the exported datasets"),
-    ctx: typer.Context = typer.Context,
 ):
     file_paths = glob.glob(f"{input_path}/*.csv")
 
@@ -107,5 +110,5 @@ def import_datasets(
 
 
 if __name__ == "__main__":
-    settings = Settings(_env_file=".env", _env_file_encoding="utf-8")
+    settings = Settings(_env_file=".env", _env_file_encoding="utf-8")  # type: ignore
     cli()

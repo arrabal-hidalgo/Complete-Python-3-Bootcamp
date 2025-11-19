@@ -1,12 +1,11 @@
 import os
 
-from segittur_commons.app.infrastructure.ai.llm.ai_factory import AIFactory
-
-from langchain_core.language_models import BaseChatModel
 from langchain_core.embeddings import Embeddings
+from langchain_core.language_models import BaseChatModel
+from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
+from openai import AzureOpenAI
 
-from langchain_openai import AzureChatOpenAI
-from langchain_openai import AzureOpenAIEmbeddings
+from segittur_commons.app.infrastructure.ai.llm.ai_factory import AIFactory
 
 
 class AzureOpenAIFactory(AIFactory):
@@ -19,7 +18,7 @@ class AzureOpenAIFactory(AIFactory):
         openai_api_version = model_config.get("openai_api_version", os.getenv("OPENAI_API_VERSION"))
         model_type = model_config.get("type", "chat")
         if "chat" == model_type:
-            return AzureChatOpenAI(
+            return AzureChatOpenAI(  # type: ignore
                 azure_deployment=model_name,
                 openai_api_type="azure",
                 api_key=api_key,
@@ -41,4 +40,11 @@ class AzureOpenAIFactory(AIFactory):
                 max_retries=2,
                 model_kwargs=model_kwargs,
             )
+        elif "stt" == model_type:
+            return AzureOpenAI(
+                api_key=api_key,
+                azure_endpoint=azure_endpoint,
+                api_version=openai_api_version,
+                max_retries=2,
+            ).audio.transcriptions  # type: ignore
         raise ValueError(f"${model_type } model type not supported. Only [chat|embedding]")
