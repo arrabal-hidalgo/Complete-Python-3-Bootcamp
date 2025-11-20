@@ -55,6 +55,15 @@
             "justMyCode": false,
             "envFile": "${workspaceFolder}/.devcontainer/.env",
             "args": ["import", "--input-path", "initial_prompts.json", "--prompts-to-import", "${command:pickArgs}"],
-        }
+        },
+        {
+            "name": "arcgis",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/arcgis_script.py",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/.devcontainer/.env",
+            "args": [],
+        },
     ]
 }
