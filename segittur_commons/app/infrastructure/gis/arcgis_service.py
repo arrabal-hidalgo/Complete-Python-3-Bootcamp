@@ -1,14 +1,12 @@
 import datetime as dt
 import logging
-import os
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import ValidationError
 
 # isort: off
 from arcgis.gis import GIS
-from arcgis.features import Feature, FeatureLayer, FeatureSet
+from arcgis.features import FeatureLayer, FeatureSet
 from arcgis.geocoding import geocode
 from arcgis.network.analysis import find_routes
 
@@ -82,7 +80,7 @@ class ArcGISService:
                 logger.error(f"Error geocoding '{address}': {e}")
                 continue
 
-            if geocode_result:
+            if isinstance(geocode_result, FeatureSet) and geocode_result.features:
                 try:
                     fc = FeatureCollection.model_validate_json(geocode_result.to_geojson)
                     feature_collections.append(fc)
