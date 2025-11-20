@@ -1,7 +1,6 @@
-from typing import List, Tuple
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 
 class AuthenticatedUser(BaseModel):
@@ -12,6 +11,10 @@ class AuthenticatedUser(BaseModel):
 
     id: str | None = None
     session: UUID | None = None
-    token: str | None = None
+    access_token: SecretStr | None = None
     # List of (role, destination) tuples. Destination is None for global roles.
-    roles: List[Tuple[str, str | None]] = []
+    roles: list[tuple[str, str | None]] = []
+
+    @property
+    def token(self):
+        return self.access_token.get_secret_value()
