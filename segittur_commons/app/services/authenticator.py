@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import List, Type
 
 from jwt.exceptions import InvalidTokenError
+from pydantic import SecretStr
 
 from segittur_commons.app.entities.user import AuthenticatedUser
 from segittur_commons.app.infrastructure.identity_manager.keycloack_im import KeycloakIm
@@ -61,10 +62,9 @@ class Authenticator:
         access_token = self.identity_manager.decode(token)
 
         for parser_class in self.parsers:
-            parser_instance = parser_class(access_token)
-            if parser_instance.can_parse():
-                user = parser_instance.get_user()
-                user.token = token
+            if (parser_instance := parser_class(access_token)).can_parse():
+                user: AuthenticatedUser = parser_instance.get_user()
+                user.access_token = SecretStr(token)
                 return user
 
         raise InvalidTokenError("No suitable parser found for the provided token.")
