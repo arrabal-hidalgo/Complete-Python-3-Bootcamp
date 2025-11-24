@@ -46,6 +46,15 @@ class MinioBlob(Blob):
         result = self.storage.get_object(bckt, file_name)
         return result
 
+    def delete_data(self, file_name, bucket=None):
+        bckt = bucket if bucket else self.bucket
+
+        try:
+            self.storage.remove_object(bckt, file_name)
+            return True
+        except Exception:
+            return False
+
     def file_link(self, file_name, bucket=None):
         bckt = bucket if bucket else self.bucket
         return self.storage.get_presigned_url(

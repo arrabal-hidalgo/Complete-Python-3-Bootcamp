@@ -20,6 +20,10 @@ class Blob(ABC):
         pass
 
     @abstractmethod
+    def delete_data(self, file_name, bucket=None):
+        pass
+
+    @abstractmethod
     def get_provider(self) -> str:
         pass
 
