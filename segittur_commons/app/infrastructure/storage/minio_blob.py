@@ -14,7 +14,11 @@ class MinioBlob(Blob):
 
     def __init__(self, server_url, access_key, secret_key, region, bucket, secure=True):
         self.storage = Minio(
-            server_url, access_key=access_key, secret_key=secret_key, secure=secure, region=region
+            endpoint=server_url,
+            access_key=access_key,
+            secret_key=secret_key,
+            secure=secure,
+            region=region,
         )
         self.server_url = server_url
         self.access_key = access_key
