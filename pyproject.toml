@@ -23,7 +23,7 @@ dependencies = [
     "pydantic-settings (>=2.0,<3.0)",
     "azure-storage-blob (>=12.25.1,<12.26.0)",
     "azure-identity (>=1.23.0,<1.24.0)",
-    "minio (>=7.2.15,<7.3.0)",
+    "minio (==7.2.18)",
     "pycasbin (>=1.4.0,<2.0.0)",
     "python-keycloak (>=5.8.1,<5.9.0)",
     "pyyaml (>=6.0.2,<6.1.0)",
