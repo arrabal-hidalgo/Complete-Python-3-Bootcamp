@@ -92,6 +92,18 @@ class AzureBlob(Blob):
 
         return f"https://{self.account_name}.blob.core.windows.net/{bckt}/{file_name}?{sas_token}"
 
+    def delete_data(self, file_name, bucket=None):
+        container = bucket if bucket else self.bucket
+        blob_client = self.blob_service_client.get_container_client(container).get_blob_client(
+            file_name
+        )
+
+        try:
+            blob_client.delete_blob()
+            return True
+        except Exception:
+            return False
+
     def get_config(self):
         return {
             "url": self.account_url,
