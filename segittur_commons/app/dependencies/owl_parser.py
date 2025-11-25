@@ -7,16 +7,19 @@ def get_owl_parser():
     return OWLParser(
         os.getenv("OWL_URL"),
         [
-            "Accommodation",
+            "AccommodationEstablishment",
             "TourGuide",
             "TouristIntermediary",
             "TourismResource",
+            "TourismOrganisation"
             "LocalBusiness",
-            "RestaurantService",
-            "PassengerTransport",
+            "FoodEstablishment",
+            "PassengerTransportCompany",
             "TouristDestination",
+            "HistoricalOrCulturalResource",
             "TransportInfraestructure",
-            "TouristOrRelatedFacility",
+            "TourismOrRelatedFacility",
+            "SportFacility",
             "PublicService",
             "Person",
             "Event",
