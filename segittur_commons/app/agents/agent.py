@@ -18,9 +18,13 @@ class Agent(ABC):
     def __init__(self, llm: BaseChatModel, **kwargs_prompt):
         self.llm = llm
         self.template = self.langfuse_handler.get_langchain_prompt(
-            f"[{self.prompt_prefix}]{self.prompt_name}", **kwargs_prompt
+            self.prompt_full_name, **kwargs_prompt
         )
         self.chain = self._create_chain()
+
+    @property
+    def prompt_full_name(self) -> str:
+        return f"[{self.prompt_prefix}]{self.prompt_name}"
 
     @staticmethod
     def add_vars_to_string(input: dict) -> dict:
