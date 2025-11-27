@@ -59,7 +59,9 @@ def create_csv_for_items(dataset_name, items: list[DatasetItem], dir: str):
     with open(f"{dir}/{dataset_name}.csv", "w", encoding="utf-8") as file:
         file.write("input, expected_output\n")
         for item in items:
-            file.write(f'"{json.dumps(item.input).replace('"', '""')}",{json.dumps(item.expected_output)}\n')
+            file.write(
+                f'"{json.dumps(item.input, ensure_ascii=False).replace('"', '""')}",{json.dumps(item.expected_output, ensure_ascii=False)}\n'
+            )
 
 
 def create_dataset(langfuse: Langfuse, name: str, items: list[DatasetItem]):
