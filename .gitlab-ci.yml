@@ -146,6 +146,6 @@ publish-oci:
       oras push "$AZURE_REGISTRY/${IMAGE_NAME}:${TAG_VERSION}" \
         --artifact-type application/vnd.python.wheel \
         --annotation org.opencontainers.image.title="$(basename "$WHEEL")" \
-        --annotation org.opencontainers.image.version="${VERSION}" \
+        --annotation org.opencontainers.image.version="${TAG_VERSION}" \
         "$WHEEL:application/vnd.python.wheel"
     - echo "Package was published properly into OCI Registry Package"
