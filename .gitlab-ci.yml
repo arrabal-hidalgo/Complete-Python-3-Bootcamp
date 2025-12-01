@@ -112,7 +112,7 @@ build-and-publish:
 
 publish-oci:
   stage: deploy
-  image: python:3.12-slim
+  image: python:3.12
   # tags:
   #  - daiot-cluster
   rules:
