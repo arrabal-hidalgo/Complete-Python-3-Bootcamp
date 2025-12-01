@@ -8,6 +8,7 @@ stages:
 
 variables:
   IMAGE_NAME: "segittur-commons"
+  REGISTRY_NAME: $AZURE_REGISTRY/$IMAGE_NAME
   DOCKER_DRIVER: overlay2
   TEST_IMAGE_TAG: test-$CI_COMMIT_SHORT_SHA
 
@@ -137,9 +138,14 @@ publish-oci:
         exit 1
       fi
     - poetry build
-    - oras login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - echo $AZURE_REGISTRY_PASSWORD | oras login $AZURE_REGISTRY -u $AZURE_REGISTRY_USER --password-stdin
+    - WHEEL="$(ls dist/*.whl | head -n1)"
+    - TAG_VERSION="${CI_COMMIT_TAG#v}"
     - echo "Publishing package into OCI registry..."
     - |
-      TAG_VERSION=$(echo "${CI_COMMIT_TAG}" | sed 's/^v//')
-      oras push "$CI_REGISTRY_IMAGE/${IMAGE_NAME}:${TAG_VERSION}" dist/*
+      oras push "$AZURE_REGISTRY/${IMAGE_NAME}:${TAG_VERSION}" \
+        --artifact-type application/vnd.python.wheel \
+        --annotation org.opencontainers.image.title="$(basename "$WHEEL")" \
+        --annotation org.opencontainers.image.version="${VERSION}" \
+        "$WHEEL:application/vnd.python.wheel"
     - echo "Package was published properly into OCI Registry Package"
