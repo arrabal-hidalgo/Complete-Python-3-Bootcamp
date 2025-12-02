@@ -121,7 +121,7 @@ publish-oci:
   before_script:
     - pip install poetry
     - |
-      ORAS_VERSION="1.1.0"
+      ORAS_VERSION="1.3.0"
       echo "Getting oras..."
       curl -sL -o oras.tar.gz "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
       mkdir -p oras-install/
@@ -139,13 +139,15 @@ publish-oci:
       fi
     - poetry build
     - echo $AZURE_REGISTRY_PASSWORD | oras login $AZURE_REGISTRY -u $AZURE_REGISTRY_USER --password-stdin
-    - WHEEL="$(ls dist/*.whl | head -n1)"
     - TAG_VERSION="${CI_COMMIT_TAG#v}"
     - echo "Publishing package into OCI registry..."
     - |
+      cd dist
       oras push "$AZURE_REGISTRY/${IMAGE_NAME}:${TAG_VERSION}" \
-        --artifact-type application/vnd.python.wheel \
-        --annotation org.opencontainers.image.title="$(basename "$WHEEL")" \
+        --artifact-type application/vnd.myproject.python-package \
         --annotation org.opencontainers.image.version="${TAG_VERSION}" \
-        "$WHEEL:application/vnd.python.wheel"
+        --annotation "segittur_commons-${TAG_VERSION}-py3-none-any.whl"="type=wheel" \
+        --annotation "segittur_commons-${TAG_VERSION}.tar.gz"="type=sdist" \
+        "segittur_commons-${TAG_VERSION}-py3-none-any.whl:application/vnd.python.wheel"
+        "segittur_commons-${TAG_VERSION}.tar.gz:application/vnd.python.package"
     - echo "Package was published properly into OCI Registry Package"
