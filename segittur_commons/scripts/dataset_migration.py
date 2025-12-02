@@ -35,7 +35,7 @@ def check_langfuse_connection(langfuse: Langfuse):
         )
 
 
-def get_datasets(langfuse: Langfuse) -> dict[str, list]:
+def get_datasets(langfuse: Langfuse) -> dict[str, list[DatasetItem]]:
     datasets_client = langfuse.api.datasets
     datasets = datasets_client.list(limit=60).data
     data = {}
@@ -46,13 +46,7 @@ def get_datasets(langfuse: Langfuse) -> dict[str, list]:
 
 
 def get_dataset_items(langfuse: Langfuse, dataset) -> list[DatasetItem]:
-    datasets_items_client = langfuse.api.dataset_items
-    items = datasets_items_client.list(dataset_name=dataset.name, limit=100).data
-    return [
-        DatasetItem(input=item.input, expected_output=item.expected_output)
-        for item in items
-        if item.input and item.expected_output
-    ]
+    return langfuse.get_dataset(dataset.name).items
 
 
 def create_csv_for_items(dataset_name, items: list[DatasetItem], dir: str):
