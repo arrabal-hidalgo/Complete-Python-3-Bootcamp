@@ -50,7 +50,7 @@ jobs:
         with:
           version: 1.3.0
       - run: echo "${{ secrets.SP_ACR_PRU_SECRET }}"  | oras login "${{ vars.SP_ACR_PRU_NAME }}" -u "${{ secrets.SP_ACR_APP_PRU_ID }}" --password-stdin
-      - run: echo "${{vars.SP_ACR_PRU_NAME}}/${{ github.event.repository.name }}:${{ VERSION }}"
+      - run: echo "${{vars.SP_ACR_PRU_NAME}}/${{ github.event.repository.name }}:${{ env.VERSION }}"
      # - run: |
      #   cd dist
      #   oras push "$AZURE_REGISTRY/${{ github.event.repository.name }}:${TAG_VERSION}" \
