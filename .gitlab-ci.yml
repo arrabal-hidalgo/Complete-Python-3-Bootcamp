@@ -148,6 +148,6 @@ publish-oci:
         --annotation org.opencontainers.image.version="${TAG_VERSION}" \
         --annotation "segittur_commons-${TAG_VERSION}-py3-none-any.whl"="type=wheel" \
         --annotation "segittur_commons-${TAG_VERSION}.tar.gz"="type=sdist" \
-        "segittur_commons-${TAG_VERSION}-py3-none-any.whl:application/vnd.python.wheel" \
-        "segittur_commons-${TAG_VERSION}.tar.gz:application/vnd.python.package"
+        "segittur_commons-${TAG_VERSION}-py3-none-any.whl:segittur_commons-${TAG_VERSION}-py3-none-any.whl" \
+        "segittur_commons-${TAG_VERSION}.tar.gz:segittur_commons-${TAG_VERSION}.tar.gz"
     - echo "Package was published properly into OCI Registry Package"
