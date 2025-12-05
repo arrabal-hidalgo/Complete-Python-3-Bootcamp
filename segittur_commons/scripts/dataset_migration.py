@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 import typer
 from langfuse import Langfuse
-from langfuse.api import Dataset
+from langfuse.api import Dataset, NotFoundError
 from langfuse.api.resources.dataset_items.client import DatasetItemsClient
 from langfuse.api.resources.datasets.client import DatasetsClient
 from pydantic import Field
@@ -65,13 +65,13 @@ def get_datasets(datasets_client: DatasetsClient, datasets_names: str) -> list[D
 
 
 def get_dataset_items(
-    datasets_items_client: DatasetItemsClient, dataset: Dataset, limit: int
+    datasets_items_client: DatasetItemsClient, dataset_name: str, limit: int
 ) -> list[DatasetItem]:
     items = []
     page = 1
     while True:
         page_items = datasets_items_client.list(
-            dataset_name=dataset.name, page=page, limit=limit
+            dataset_name=dataset_name, page=page, limit=limit
         ).data
         items.extend(page_items)
         if len(page_items) < limit:
@@ -105,17 +105,17 @@ def export_datasets(
     datasets_to_export: str = typer.Option(
         "", help="Comma-separated list of datasets to export. e.g. 'dataset1,dataset2'"
     ),
-    page_size: int = typer.Option(1000, help="Page size"),
+    page_size: int = typer.Option(MAX_PAGE_SIZE, help="Page size"),
 ):
-    if page_size > (max_page_size := 100):
+    if page_size > (max_page_size := MAX_PAGE_SIZE):
         print(f"WARNING: Resized page size to maximum size allowed ({max_page_size})")
-        page_size = 100
+        page_size = MAX_PAGE_SIZE
 
     langfuse: Langfuse = ctx.obj.get("langfuse")
     for dataset in get_datasets(langfuse.api.datasets, datasets_to_export):
         dataset_name = dataset.name
         print(f"-> Dataset: {dataset_name}")
-        items = get_dataset_items(langfuse.api.dataset_items, dataset, page_size)
+        items = get_dataset_items(langfuse.api.dataset_items, dataset_name, page_size)
         create_csv_for_items(dataset_name, items, output_dir)
 
 
@@ -132,23 +132,26 @@ def get_files(input_dir: str, datasets_names: str) -> list[Path]:
 
 
 def create_dataset(langfuse: Langfuse, path: Path):
-    with open(path, "r", encoding="utf-8") as file:
-        reader = csv.reader(file)
-        dataset_name = path.stem
-        print(f"-> Dataset: {dataset_name}")
+    dataset_name = path.stem
+    print(f"-> Dataset: {dataset_name}")
+    df = pd.read_csv(path).drop_duplicates()
+    try:
+        # Get old items from the dataset
+        records = [
+            (item.input, item.expected_output)
+            for item in get_dataset_items(langfuse.api.dataset_items, dataset_name, MAX_PAGE_SIZE)
+        ]
+        old_data = pd.DataFrame(records, columns=list(df.columns))
+        # Remove duplicates in the new data
+        df = pd.concat([old_data, df]).drop_duplicates(keep=False)
+    except NotFoundError:
+        pass
 
-        next(reader, None)  # Skip header
-        langfuse.create_dataset(name=dataset_name)
-        for row in reader:
-            input = json.loads(row[0])
-            try:
-                output = json.loads(row[1])
-            except json.decoder.JSONDecodeError:
-                output = row[1]
-            item = DatasetItem(input=input, expected_output=output)
-            langfuse.create_dataset_item(
-                dataset_name=dataset_name, input=item.input, expected_output=item.expected_output
-            )
+    langfuse.create_dataset(name=dataset_name)
+    for item in df.itertuples(index=False):
+        langfuse.create_dataset_item(
+            dataset_name=dataset_name, input=item.input, expected_output=item.expected_output
+        )
 
 
 @cli.command(name="import")
