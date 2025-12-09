@@ -22,6 +22,11 @@ from segittur_commons.app.entities.route import (
     RouteManeuver,
     RouteResponse,
 )
+from segittur_commons.app.entities.route import (
+    ManeuverList,
+    RouteManeuver,
+    RouteResponse,
+)
 from segittur_commons.app.enums import PreserveStops
 
 logger = logging.getLogger(__name__)
@@ -180,6 +185,7 @@ class ArcGISService:
                     result.output_routes.to_geojson
                 ),
                 output_directions=self._transform_arcgis_directions(result.output_directions),
+                output_directions=self._transform_arcgis_directions(result.output_directions),
             )
 
         except (ValidationError, AttributeError, Exception) as e:
@@ -228,11 +234,11 @@ class ArcGISService:
 
     def _transform_arcgis_directions(self, arcgis_directions: FeatureSet) -> ManeuverList:
         """
-        Transforms the verbose ArcGIS directions FeatureSet into a clean ManeuverList
+        Transforms the verbose ArcGIS directions FeatureSet into a clean list
         of RouteManeuver objects.
         """
         if not arcgis_directions:
-            return ManeuverList(items=[])
+            return []
 
         maneuvers = []
         for step_feature in arcgis_directions.features:
