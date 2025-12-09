@@ -27,11 +27,15 @@ class Node(ABC, Generic[TAgent]):
     def _get_llm(self, model: str, **model_params) -> Any:
         return load_llm_model(model, **model_params)
 
-    def get_router(self, state: BaseModel) -> NodeType:
+    def get_router(self, state: BaseModel) -> NodeType | str:
         raise NotImplementedError
 
     def get_path(self, state: BaseModel) -> str:
-        return self.get_router(state).value  # type: ignore[no-any-return]
+        return (
+            next_node.value
+            if isinstance(next_node := self.get_router(state), NodeType)
+            else next_node
+        )
 
     @abstractmethod
     def call(self, state: BaseModel):
