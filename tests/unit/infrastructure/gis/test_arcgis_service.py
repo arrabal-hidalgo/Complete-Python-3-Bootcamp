@@ -7,7 +7,7 @@ from geojson_pydantic.features import Feature as GeoJsonFeature
 from geojson_pydantic.features import FeatureCollection
 from geojson_pydantic.geometries import LineString, Point
 
-from segittur_commons.app.entities.route import RouteResponse
+from segittur_commons.app.entities.route import ManeuverList, RouteResponse
 from segittur_commons.app.infrastructure.gis.arcgis_service import ArcGISService
 
 
@@ -288,7 +288,7 @@ class TestFindOptimalRoute:
             (-74.2, 40.9),
         ]
 
-        assert result.output_directions is None
+        assert result.output_directions == ManeuverList(items=[])
         mock_find_routes.assert_called_once()
 
     def test_find_optimal_route_insufficient_stops(self, arcgis_service):
