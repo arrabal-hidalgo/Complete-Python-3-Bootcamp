@@ -86,7 +86,9 @@ class ArcGISService:
 
             if isinstance(geocode_result, FeatureSet) and geocode_result.features:
                 try:
-                    fc = FeatureCollection.model_validate_json(geocode_result.to_geojson)
+                    fc: FeatureCollection = FeatureCollection.model_validate_json(
+                        geocode_result.to_geojson
+                    )
                     feature_collections.append(fc)
                 except (ValidationError, AttributeError) as e:
                     logger.error(
@@ -228,11 +230,11 @@ class ArcGISService:
 
     def _transform_arcgis_directions(self, arcgis_directions: FeatureSet) -> ManeuverList:
         """
-        Transforms the verbose ArcGIS directions FeatureSet into a clean list
+        Transforms the verbose ArcGIS directions FeatureSet into a clean ManeuverList
         of RouteManeuver objects.
         """
         if not arcgis_directions:
-            return []
+            return ManeuverList(items=[])
 
         maneuvers = []
         for step_feature in arcgis_directions.features:
