@@ -6,7 +6,10 @@ from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.runnables import RunnableSerializable
 
 from segittur_commons.app.entities.graph import PromptType
-from segittur_commons.app.services.langfuse_service import LangfuseHandler
+from segittur_commons.app.services.langfuse_service import (
+    LangfuseHandler,
+    get_langfuse_handler,
+)
 
 
 class Agent(ABC):
@@ -17,6 +20,9 @@ class Agent(ABC):
 
     def __init__(self, llm: BaseChatModel, **kwargs_prompt):
         self.llm = llm
+        self.langfuse_handler = get_langfuse_handler()
+        if llm is None:
+            return
         self.template = self.langfuse_handler.get_langchain_prompt(
             f"[{self.prompt_prefix}]{self.prompt_name}", **kwargs_prompt
         )
