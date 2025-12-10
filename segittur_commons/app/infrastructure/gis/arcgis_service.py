@@ -148,14 +148,12 @@ class ArcGISService:
         if not stops_data or len(stops_data.features) < 2:
             raise ValueError("At least two stops are required to calculate a route.")
 
-        current_time_ms = (
-            time_of_day if time_of_day is not None else int(dt.datetime.now().timestamp() * 1000)
-        )
+        current_time = time_of_day if time_of_day is not None else dt.datetime.now()
 
         logger.info(
             "Calculating route for %d stops at %s",
             len(stops_data.features),
-            dt.datetime.fromtimestamp(current_time_ms / 1000),
+            time_of_day,
         )
 
         # Convert FeatureCollection to ArcGIS FeatureSet
@@ -165,7 +163,7 @@ class ArcGISService:
         try:
             params = {
                 "stops": arcgis_stops_fs,
-                "time_of_day": current_time_ms,
+                "time_of_day": current_time,
                 "time_zone_for_time_of_day": time_zone_for_time_of_day,
                 "preserve_terminal_stops": preserve_terminal_stops.value,
                 **arcgis_route_params,

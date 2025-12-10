@@ -2,12 +2,13 @@ from enum import Enum
 
 
 class TravelMode(str, Enum):
-    fastest = "fastest"
-    shortest = "shortest"
-    driving = "Driving Time"
-    trucking = "Trucking Time"
-    walking = "Walking Time"
-    cycling = "Biking Time"
+    driving_time = "Driving Time"
+    driving_distance = "Driving Distance"
+    rural_driving_time = "Rural Driving Time"
+    rural_driving_distance = "Rural Driving Distance"
+    walking_time = "Walking Time"
+    walking_distance = "Walking Distance"
+    custom = "Custom"
 
 
 class PreserveStops(str, Enum):
@@ -16,7 +17,7 @@ class PreserveStops(str, Enum):
     NONE = "Preserve None"
     START = "Preserve First"
     END = "Preserve Last"
-    BOTH = "Preserve Both"
+    BOTH = "Preserve First and Last"
 
 
 class GeocodeCategory(str, Enum):
