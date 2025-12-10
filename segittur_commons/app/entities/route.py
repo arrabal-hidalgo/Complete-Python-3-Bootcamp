@@ -1,7 +1,7 @@
 from typing import List
 
 from geojson_pydantic.features import FeatureCollection
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class RouteManeuver(BaseModel):
