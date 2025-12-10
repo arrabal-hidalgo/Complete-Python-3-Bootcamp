@@ -234,11 +234,11 @@ class ArcGISService:
 
     def _transform_arcgis_directions(self, arcgis_directions: FeatureSet) -> ManeuverList:
         """
-        Transforms the verbose ArcGIS directions FeatureSet into a clean list
+        Transforms the verbose ArcGIS directions FeatureSet into a clean ManeuverList
         of RouteManeuver objects.
         """
         if not arcgis_directions:
-            return []
+            return ManeuverList(items=[])
 
         maneuvers = []
         for step_feature in arcgis_directions.features:
