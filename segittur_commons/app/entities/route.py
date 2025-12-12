@@ -25,7 +25,6 @@ class ManeuverList(BaseModel):
 >>>>>>> 5107147 (feat: add directions in arcgis service)
 
 
-
 class RouteResponse(BaseModel):
     """
     Represents the result of a route calculation using standard GeoJSON FeatureCollections.
