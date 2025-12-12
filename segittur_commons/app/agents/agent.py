@@ -19,7 +19,7 @@ class Agent(ABC):
 
     def __init__(self, llm: BaseChatModel, **kwargs_prompt):
         self.llm = llm
-        self.langfuse_handler = get_langfuse_handler()
+        self.langfuse_handler: LangfuseHandler = get_langfuse_handler()
         if llm is None:
             return
         self.template = self.langfuse_handler.get_langchain_prompt(
