@@ -47,3 +47,21 @@ class LangfuseHandler:
         return self.langfuse.start_as_current_span(
             name=trace_name, trace_context={"trace_id": predefined_trace_id}
         )
+
+
+_LANGFUSE_HANDLER: LangfuseHandler | None = None
+
+
+def set_langfuse_handler(handler: LangfuseHandler):
+    global _LANGFUSE_HANDLER
+    _LANGFUSE_HANDLER = handler
+
+
+def get_langfuse_handler() -> LangfuseHandler:
+
+    if _LANGFUSE_HANDLER is None:
+        raise RuntimeError(
+            "Langfuse handler not initialized. "
+            "Did you forget to call set_langfuse_handler() during startup?"
+        )
+    return _LANGFUSE_HANDLER
