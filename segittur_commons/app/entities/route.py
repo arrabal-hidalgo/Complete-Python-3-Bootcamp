@@ -21,22 +21,6 @@ class ManeuverList(BaseModel):
     items: List[RouteManeuver]
 
 
-class RouteManeuver(BaseModel):
-    """
-    Represents a single, simplified turn-by-turn instruction for a route.
-    """
-
-    instruction: str
-    distance: float
-    arrive_time: float
-
-    class Config:
-        from_attributes = True
-
-
-class ManeuverList(BaseModel):
-    items: List[RouteManeuver]
-
 
 class RouteResponse(BaseModel):
     """
