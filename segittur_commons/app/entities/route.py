@@ -34,10 +34,6 @@ class RouteManeuver(BaseModel):
         from_attributes = True
 
 
-class ManeuverList(BaseModel):
-    items: List[RouteManeuver]
-
-
 class RouteResponse(BaseModel):
     """
     Represents the result of a route calculation using standard GeoJSON FeatureCollections.
