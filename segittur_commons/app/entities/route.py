@@ -2,9 +2,6 @@ from typing import List
 
 from geojson_pydantic.features import FeatureCollection
 from pydantic import BaseModel
-from pydantic import BaseModel, Field
-<<<<<<< HEAD
-=======
 
 
 class RouteManeuver(BaseModel):
@@ -22,7 +19,6 @@ class RouteManeuver(BaseModel):
 
 class ManeuverList(BaseModel):
     items: List[RouteManeuver]
->>>>>>> 5107147 (feat: add directions in arcgis service)
 
 
 class RouteManeuver(BaseModel):
