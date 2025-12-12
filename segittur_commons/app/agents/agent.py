@@ -14,7 +14,6 @@ from segittur_commons.app.services.langfuse_service import (
 
 class Agent(ABC):
     prompt_name: PromptType
-    langfuse_handler = LangfuseHandler()
     user_input_var: str = "user_input"
     prompt_prefix: str = "agents"
 
