@@ -1,3 +1,4 @@
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -79,10 +80,8 @@ def get_dataset_items(
 @cli.command(name="export")
 def export_datasets(
     ctx: typer.Context,
-    output_data_dir: str = typer.Option(None, help="Directory path to save the exported datasets"),
-    dataset_prefix: str = typer.Option(
-        None, help="Langfuse prefix of the datasets's data to export"
-    ),
+    output_data_dir: str = typer.Option(help="Directory path to save the exported datasets"),
+    dataset_prefix: str = typer.Option(help="Langfuse prefix of the datasets's data to export"),
     datasets_to_export: str = typer.Option(
         "", help="Comma-separated list of datasets to export. e.g. 'dataset1,dataset2'"
     ),
@@ -96,6 +95,11 @@ def export_datasets(
     for dataset_name in get_datasets(langfuse.api.datasets, dataset_prefix, datasets_to_export):
         print(f"\n-> Dataset: {dataset_name}")
         df_items = get_dataset_items(langfuse, dataset_name, page_size)
+        df_items["input"] = df_items["input"].apply(lambda x: json.dumps(x, ensure_ascii=False))
+        if isinstance(df_items["expected_output"].loc[0], dict):
+            df_items["expected_output"] = df_items["expected_output"].apply(
+                lambda x: json.dumps(x, ensure_ascii=False)
+            )
         df_items.to_csv(Path(output_data_dir, f"{dataset_name.name}.csv"), index=False)
         print(f"--> {len(df_items)} exported items.\n")
 
@@ -125,6 +129,12 @@ def create_dataset(langfuse: Langfuse, path: Path, dataset_prefix: str):
     except NotFoundError:
         pass
 
+    df["input"] = df["input"].apply(json.loads)
+    try:
+        df["expected_output"] = df["expected_output"].apply(json.loads)
+    except json.JSONDecodeError:
+        pass
+
     str_dataset_name = str(dataset_name)
     langfuse.create_dataset(name=str_dataset_name)
     if df.empty:
@@ -142,8 +152,8 @@ def create_dataset(langfuse: Langfuse, path: Path, dataset_prefix: str):
 @cli.command(name="import")
 def import_datasets(
     ctx: typer.Context,
-    input_data_dir: str = typer.Option(None, help="Path's directory of the datasets's data"),
-    dataset_prefix: str = typer.Option(None, help="Langfuse prefix to import the datasets's data"),
+    input_data_dir: str = typer.Option(help="Path's directory of the datasets's data"),
+    dataset_prefix: str = typer.Option(help="Langfuse prefix to import the datasets's data"),
     datasets_to_import: str = typer.Option(
         "", help="Comma-separated list of datasets to import. e.g. 'dataset1,dataset2'"
     ),
