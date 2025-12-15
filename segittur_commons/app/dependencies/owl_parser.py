@@ -11,8 +11,7 @@ def get_owl_parser():
             "TourGuide",
             "TouristIntermediary",
             "TourismResource",
-            "TourismOrganisation"
-            "LocalBusiness",
+            "TourismOrganisation" "LocalBusiness",
             "FoodEstablishment",
             "PassengerTransportCompany",
             "TouristDestination",
