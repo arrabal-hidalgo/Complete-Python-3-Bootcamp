@@ -1,3 +1,5 @@
+from typing import Any
+
 from owlready2 import (
     DataPropertyClass,
     ObjectPropertyClass,
@@ -28,7 +30,6 @@ class OWLParser:
         self._all_ontology_properties: list[PropertyClass] = list(
             self.ontology.object_properties()
         ) + list(self.ontology.data_properties())
-        self._reference_classes = set()
         self.presentation_order_category_prop = self.ontology.search_one(
             iri="*presentationOrderCategory"
         )
@@ -88,14 +89,14 @@ class OWLParser:
             results[cls.name] = self.get_all_properties_for_class(cls)
         return results
 
-    def get_subclasses(self, ontology_class: ThingClass) -> set[ThingClass]:
+    def get_subclasses(self, ontology_class: ThingClass) -> set[ThingClass] | Any:
         return ThingClass.descendants(ontology_class, include_self=False)
 
-    def get_parents(self, ontology_class: ThingClass) -> set[ThingClass]:
+    def get_parents(self, ontology_class: ThingClass) -> set[ThingClass] | Any:
         return ThingClass.ancestors(ontology_class)
 
     def get_all_subclasses(self, original_classes: list) -> set:
-        all_subclasses = set()
+        all_subclasses: set[ThingClass] = set()
         for original_class in original_classes:
             all_subclasses.update(self.get_subclasses(original_class))
         return all_subclasses
@@ -134,7 +135,7 @@ class OWLParser:
         Returns:
             A dictionary representing the schema for the given properties.
         """
-        schema = {}
+        schema: dict[str, dict | str] = {}
         sorted_properties = sorted(properties, key=lambda p: p.name)
 
         for prop in sorted_properties:
