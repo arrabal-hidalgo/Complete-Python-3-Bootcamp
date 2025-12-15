@@ -17,7 +17,11 @@ from geojson_pydantic.features import Feature as GeoJsonFeature
 from geojson_pydantic.features import FeatureCollection
 from geojson_pydantic.geometries import Point
 
-from segittur_commons.app.entities.route import RouteResponse
+from segittur_commons.app.entities.route import (
+    ManeuverList,
+    RouteManeuver,
+    RouteResponse,
+)
 from segittur_commons.app.enums import PreserveStops
 
 logger = logging.getLogger(__name__)
@@ -82,7 +86,9 @@ class ArcGISService:
 
             if isinstance(geocode_result, FeatureSet) and geocode_result.features:
                 try:
-                    fc = FeatureCollection.model_validate_json(geocode_result.to_geojson)
+                    fc: FeatureCollection = FeatureCollection.model_validate_json(
+                        geocode_result.to_geojson
+                    )
                     feature_collections.append(fc)
                 except (ValidationError, AttributeError) as e:
                     logger.error(
@@ -142,14 +148,12 @@ class ArcGISService:
         if not stops_data or len(stops_data.features) < 2:
             raise ValueError("At least two stops are required to calculate a route.")
 
-        current_time_ms = (
-            time_of_day if time_of_day is not None else int(dt.datetime.now().timestamp() * 1000)
-        )
+        current_time = time_of_day if time_of_day is not None else dt.datetime.now()
 
         logger.info(
             "Calculating route for %d stops at %s",
             len(stops_data.features),
-            dt.datetime.fromtimestamp(current_time_ms / 1000),
+            time_of_day,
         )
 
         # Convert FeatureCollection to ArcGIS FeatureSet
@@ -159,10 +163,9 @@ class ArcGISService:
         try:
             params = {
                 "stops": arcgis_stops_fs,
-                "time_of_day": current_time_ms,
+                "time_of_day": current_time,
                 "time_zone_for_time_of_day": time_zone_for_time_of_day,
                 "preserve_terminal_stops": preserve_terminal_stops.value,
-                "populate_directions": False,
                 **arcgis_route_params,
             }
 
@@ -176,9 +179,7 @@ class ArcGISService:
                 output_routes=FeatureCollection.model_validate_json(
                     result.output_routes.to_geojson
                 ),
-                # output_directions=FeatureCollection.model_validate_json(
-                #    result.output_direction_lines.to_geojson
-                # ),
+                output_directions=self._transform_arcgis_directions(result.output_directions),
             )
 
         except (ValidationError, AttributeError, Exception) as e:
@@ -224,3 +225,24 @@ class ArcGISService:
         )
 
         return result_query
+
+    def _transform_arcgis_directions(self, arcgis_directions: FeatureSet) -> ManeuverList:
+        """
+        Transforms the verbose ArcGIS directions FeatureSet into a clean ManeuverList
+        of RouteManeuver objects.
+        """
+        if not arcgis_directions:
+            return ManeuverList(items=[])
+
+        maneuvers = []
+        for step_feature in arcgis_directions.features:
+            attributes = step_feature.attributes
+            maneuver_data = {
+                "instruction": attributes.get("Text", ""),
+                "distance": attributes.get("DriveDistance", 0.0),
+                "arrive_time": attributes.get("ArriveTime", 0.0),
+            }
+
+            maneuvers.append(RouteManeuver(**maneuver_data))
+
+        return ManeuverList(items=maneuvers)

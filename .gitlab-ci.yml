@@ -8,6 +8,7 @@ stages:
 
 variables:
   IMAGE_NAME: "segittur-commons"
+  REGISTRY_NAME: $AZURE_REGISTRY/$IMAGE_NAME
   DOCKER_DRIVER: overlay2
   TEST_IMAGE_TAG: test-$CI_COMMIT_SHORT_SHA
 
@@ -95,18 +96,58 @@ build-and-publish:
   rules:
     - if: $CI_COMMIT_TAG
   script:
-    - echo "Iniciando la construcción y publicación para el tag ${CI_COMMIT_TAG}"
     - pip install poetry
     - |
       TAG_VERSION=$(echo "${CI_COMMIT_TAG}" | sed 's/^v//')
       POETRY_VERSION=$(poetry version --short)
-      echo "Comprobando versiones: Tag Git ('${TAG_VERSION}') vs pyproject.toml ('${POETRY_VERSION}')"
+      echo "Checking version: Tag Git ('${TAG_VERSION}') vs pyproject.toml ('${POETRY_VERSION}')"
       if [ "${TAG_VERSION}" != "${POETRY_VERSION}" ]; then
-        echo "Error: La versión del tag (${TAG_VERSION}) no coincide con la versión de poetry (${POETRY_VERSION})."
+        echo "Error: The tag version (${TAG_VERSION}) doesn't match with poetry versión de poetry (${POETRY_VERSION})."
         exit 1
       fi
     - poetry build
     - poetry config repositories.gitlab ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi
     - poetry config http-basic.gitlab gitlab-ci-token ${CI_JOB_TOKEN}
     - poetry publish -r gitlab
-    - echo "Paquete publicado correctamente en el Package Registry de GitLab."
+    - echo "Package was published properly into Gitlab Registry Package"
+
+publish-oci:
+  stage: deploy
+  image: python:3.12
+  # tags:
+  #  - daiot-cluster
+  rules:
+    - if: $CI_COMMIT_TAG
+  before_script:
+    - pip install poetry
+    - |
+      ORAS_VERSION="1.3.0"
+      echo "Getting oras..."
+      curl -sL -o oras.tar.gz "https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_amd64.tar.gz"
+      mkdir -p oras-install/
+      tar -zxf oras.tar.gz -C oras-install/
+      mv oras-install/oras /usr/local/bin/
+      rm -rf oras.tar.gz oras-install/
+  script:
+    - |
+      TAG_VERSION=$(echo "${CI_COMMIT_TAG}" | sed 's/^v//')
+      POETRY_VERSION=$(poetry version --short)
+      echo "Checking versions: Tag Git ('${TAG_VERSION}') vs pyproject.toml ('${POETRY_VERSION}')"
+      if [ "${TAG_VERSION}" != "${POETRY_VERSION}" ]; then
+        echo "Error: The tag version (${TAG_VERSION}) doesn't match with poetry version (${POETRY_VERSION})."
+        exit 1
+      fi
+    - poetry build
+    - echo $AZURE_REGISTRY_PASSWORD | oras login $AZURE_REGISTRY -u $AZURE_REGISTRY_USER --password-stdin
+    - TAG_VERSION="${CI_COMMIT_TAG#v}"
+    - echo "Publishing package into OCI registry..."
+    - |
+      cd dist
+      oras push "$AZURE_REGISTRY/${IMAGE_NAME}:${TAG_VERSION}" \
+        --artifact-type application/vnd.myproject.python-package \
+        --annotation org.opencontainers.image.version="${TAG_VERSION}" \
+        --annotation "segittur_commons-${TAG_VERSION}-py3-none-any.whl"="type=wheel" \
+        --annotation "segittur_commons-${TAG_VERSION}.tar.gz"="type=sdist" \
+        "segittur_commons-${TAG_VERSION}-py3-none-any.whl:segittur_commons-${TAG_VERSION}-py3-none-any.whl" \
+        "segittur_commons-${TAG_VERSION}.tar.gz:segittur_commons-${TAG_VERSION}.tar.gz"
+    - echo "Package was published properly into OCI Registry Package"

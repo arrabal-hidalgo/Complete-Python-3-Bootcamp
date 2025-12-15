@@ -1,15 +1,20 @@
-import csv
-import glob
-import json
-import os
+import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
+import pandas as pd
 import typer
 from langfuse import Langfuse
+from langfuse.api import NotFoundError
+from langfuse.api.resources.datasets.client import DatasetsClient
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from segittur_commons.scripts.utils import get_list_args_from_str
+
 cli = typer.Typer()
+
+MAX_PAGE_SIZE = 100
 
 
 class Settings(BaseSettings):
@@ -18,12 +23,6 @@ class Settings(BaseSettings):
     langfuse_host: str = Field()
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
-
-@dataclass
-class DatasetItem:
-    input: dict = field(default_factory=dict)
-    expected_output: dict = field(default_factory=dict)
 
 
 def check_langfuse_connection(langfuse: Langfuse):
@@ -35,35 +34,13 @@ def check_langfuse_connection(langfuse: Langfuse):
         )
 
 
-def get_datasets(langfuse: Langfuse) -> dict[str, list[DatasetItem]]:
-    datasets_client = langfuse.api.datasets
-    datasets = datasets_client.list(limit=60).data
-    data = {}
-    for dataset in datasets:
-        items = get_dataset_items(langfuse=langfuse, dataset=dataset)
-        data[dataset.name] = items
-    return data
+@dataclass
+class DatasetName:
+    prefix: str = field(default_factory=str)
+    name: str = field(default_factory=str)
 
-
-def get_dataset_items(langfuse: Langfuse, dataset) -> list[DatasetItem]:
-    return langfuse.get_dataset(dataset.name).items
-
-
-def create_csv_for_items(dataset_name, items: list[DatasetItem], dir: str):
-    with open(f"{dir}/{dataset_name}.csv", "w", encoding="utf-8") as file:
-        file.write("input, expected_output\n")
-        for item in items:
-            file.write(
-                f'"{json.dumps(item.input, ensure_ascii=False).replace('"', '""')}",{json.dumps(item.expected_output, ensure_ascii=False)}\n'
-            )
-
-
-def create_dataset(langfuse: Langfuse, name: str, items: list[DatasetItem]):
-    langfuse.create_dataset(name=name)
-    for item in items:
-        langfuse.create_dataset_item(
-            dataset_name=name, input=item.input, expected_output=item.expected_output
-        )
+    def __str__(self):
+        return f"[{self.prefix}]{self.name}"
 
 
 @cli.callback()
@@ -74,35 +51,105 @@ def main(ctx: typer.Context):
     ctx.obj["langfuse"] = langfuse
 
 
+def get_dataset_name(full_name: str) -> DatasetName:
+    return DatasetName(*re.findall(r"\[(.*)\](.*)", full_name)[0])
+
+
+def get_datasets(
+    datasets_client: DatasetsClient, dataset_prefix: str, datasets_names: str
+) -> list[DatasetName]:
+    if not datasets_names:
+        return [get_dataset_name(dataset.name) for dataset in datasets_client.list(limit=50).data]
+    return [
+        DatasetName(dataset_prefix, dataset_main_name)
+        for dataset_main_name in get_list_args_from_str(datasets_names)
+    ]
+
+
+def get_dataset_items(
+    langfuse: Langfuse, dataset_name: DatasetName, limit: int = MAX_PAGE_SIZE
+) -> pd.DataFrame:
+    list_items = [
+        (item.input, item.expected_output)
+        for item in langfuse.get_dataset(str(dataset_name), fetch_items_page_size=limit).items
+    ]
+    return pd.DataFrame(list_items, columns=["input", "expected_output"])
+
+
 @cli.command(name="export")
 def export_datasets(
     ctx: typer.Context,
-    output_path: str = typer.Option(None, help="Directory path to save the exported datasets"),
+    output_data_dir: str = typer.Option(None, help="Directory path to save the exported datasets"),
+    dataset_prefix: str = typer.Option(
+        None, help="Langfuse prefix of the datasets's data to export"
+    ),
+    datasets_to_export: str = typer.Option(
+        "", help="Comma-separated list of datasets to export. e.g. 'dataset1,dataset2'"
+    ),
+    page_size: int = typer.Option(MAX_PAGE_SIZE, help="Page size"),
 ):
-    datasets = get_datasets(ctx.obj.get("langfuse"))
-    for dataset, items in datasets.items():
-        create_csv_for_items(dataset_name=dataset, items=items, dir=output_path)
+    if page_size > (max_page_size := MAX_PAGE_SIZE):
+        print(f"\nWARNING: Resized page size to maximum size allowed ({max_page_size})")
+        page_size = MAX_PAGE_SIZE
+
+    langfuse: Langfuse = ctx.obj.get("langfuse")
+    for dataset_name in get_datasets(langfuse.api.datasets, dataset_prefix, datasets_to_export):
+        print(f"\n-> Dataset: {dataset_name}")
+        df_items = get_dataset_items(langfuse, dataset_name, page_size)
+        df_items.to_csv(Path(output_data_dir, f"{dataset_name.name}.csv"), index=False)
+        print(f"--> {len(df_items)} exported items.\n")
+
+
+def get_files(input_dir: str, datasets_names: str) -> list[Path]:
+    base_path = Path(input_dir)
+    return (
+        list(base_path.glob("*.csv"))
+        if not datasets_names
+        else [
+            base_path.joinpath(f"{dataset_name}.csv")
+            for dataset_name in get_list_args_from_str(datasets_names)
+        ]
+    )
+
+
+def create_dataset(langfuse: Langfuse, path: Path, dataset_prefix: str):
+    dataset_name = DatasetName(dataset_prefix, path.stem)
+    print(f"\n- Dataset: {dataset_name}")
+    df = pd.read_csv(path).drop_duplicates()
+
+    try:
+        # Get old items from the dataset
+        df_old_data = get_dataset_items(langfuse, dataset_name)
+        # Remove duplicates in the new data
+        df = pd.concat([df_old_data, df]).drop_duplicates(keep=False)
+    except NotFoundError:
+        pass
+
+    str_dataset_name = str(dataset_name)
+    langfuse.create_dataset(name=str_dataset_name)
+    if df.empty:
+        print("--> No new items to import.\n")
+    else:
+        for item in df.itertuples(index=False):
+            langfuse.create_dataset_item(
+                dataset_name=str_dataset_name,
+                input=item.input,
+                expected_output=item.expected_output,
+            )
+        print(f"--> {len(df)} new imported items.\n")
 
 
 @cli.command(name="import")
 def import_datasets(
     ctx: typer.Context,
-    input_path: str = typer.Option(None, help="Directory path to import the exported datasets"),
+    input_data_dir: str = typer.Option(None, help="Path's directory of the datasets's data"),
+    dataset_prefix: str = typer.Option(None, help="Langfuse prefix to import the datasets's data"),
+    datasets_to_import: str = typer.Option(
+        "", help="Comma-separated list of datasets to import. e.g. 'dataset1,dataset2'"
+    ),
 ):
-    file_paths = glob.glob(f"{input_path}/*.csv")
-
-    for file_path in file_paths:
-        name = os.path.basename(file_path).replace(".csv", "")
-        items = []
-        with open(file_path, encoding="utf-8") as file:
-            reader = csv.reader(file, delimiter=";")
-            # Skip header
-            next(reader, None)
-            for row in reader:
-                items.append(
-                    DatasetItem(input=json.loads(row[0]), expected_output=json.loads(row[1]))
-                )
-        create_dataset(ctx.obj.get("langfuse"), name, items)
+    for path in get_files(input_data_dir, datasets_to_import):
+        create_dataset(ctx.obj.get("langfuse"), path, dataset_prefix)
 
 
 if __name__ == "__main__":
