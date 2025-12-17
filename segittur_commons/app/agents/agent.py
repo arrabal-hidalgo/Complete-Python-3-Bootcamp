@@ -27,9 +27,15 @@ class Agent(ABC):
         )
         self.chain = self._create_chain()
 
+    def get_prompt_full_name(
+        self, prompt_name: PromptType, prompt_prefix: str | None = None
+    ) -> str:
+        prompt_prefix = prompt_prefix or self.prompt_prefix
+        return f"[{prompt_prefix}]{prompt_name}"
+
     @property
     def prompt_full_name(self) -> str:
-        return f"[{self.prompt_prefix}]{self.prompt_name}"
+        return self.get_prompt_full_name(self.prompt_name)
 
     @staticmethod
     def add_vars_to_string(input: dict) -> dict:
