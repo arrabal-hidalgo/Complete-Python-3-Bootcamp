@@ -1,5 +1,6 @@
 from typing import Any
 
+from app.global_context import DEFAULT_LLM_LANGUAGE_ID
 from owlready2 import (
     DataPropertyClass,
     ObjectPropertyClass,
@@ -57,7 +58,10 @@ class OWLParser:
         ]
 
     def get_classes_description(self, classes: list) -> dict[str, str]:
-        return {cl.name: cl.comment.get_lang("en").first() if cl.comment else "" for cl in classes}
+        return {
+            cl.name: cl.comment.get_lang(DEFAULT_LLM_LANGUAGE_ID).first() if cl.comment else ""
+            for cl in classes
+        }
 
     def get_classes_names(self, classes: list[ThingClass]) -> list[str]:
         return [ontology_class.name for ontology_class in classes]

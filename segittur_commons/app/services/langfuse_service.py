@@ -44,8 +44,8 @@ class LangfuseHandler:
         self, trace_id: str, trace_name: str
     ) -> Union[_AgnosticContextManager[LangfuseSpan], Any]:
         predefined_trace_id = Langfuse.create_trace_id(seed=trace_id)
-        return self.langfuse.start_as_current_span(
-            name=trace_name, trace_context={"trace_id": predefined_trace_id}
+        return self.langfuse.start_as_current_observation(
+            as_type="span", name=trace_name, trace_context={"trace_id": predefined_trace_id}
         )
 
 

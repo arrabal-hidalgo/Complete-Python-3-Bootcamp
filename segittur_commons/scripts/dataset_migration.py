@@ -35,15 +35,6 @@ def check_langfuse_connection(langfuse: Langfuse):
         )
 
 
-@dataclass
-class DatasetName:
-    prefix: str = field(default_factory=str)
-    name: str = field(default_factory=str)
-
-    def __str__(self):
-        return f"[{self.prefix}]{self.name}"
-
-
 @cli.callback()
 def main(ctx: typer.Context):
     ctx.ensure_object(dict)
@@ -52,36 +43,35 @@ def main(ctx: typer.Context):
     ctx.obj["langfuse"] = langfuse
 
 
-def get_dataset_name(full_name: str) -> DatasetName:
-    return DatasetName(*re.findall(r"\[(.*)\](.*)", full_name)[0])
-
-
-def get_datasets(
-    datasets_client: DatasetsClient, dataset_prefix: str, datasets_names: str
-) -> list[DatasetName]:
+def get_datasets(datasets_client: DatasetsClient, datasets_names: str) -> list[str]:
     if not datasets_names:
-        return [get_dataset_name(dataset.name) for dataset in datasets_client.list(limit=50).data]
-    return [
-        DatasetName(dataset_prefix, dataset_main_name)
-        for dataset_main_name in get_list_args_from_str(datasets_names)
-    ]
+        return [dataset.name for dataset in datasets_client.list(limit=50).data]
+    return get_list_args_from_str(datasets_names)
 
 
 def get_dataset_items(
-    langfuse: Langfuse, dataset_name: DatasetName, limit: int = MAX_PAGE_SIZE
+    langfuse: Langfuse, dataset_name: str, limit: int = MAX_PAGE_SIZE
 ) -> pd.DataFrame:
     list_items = [
-        (item.input, item.expected_output)
-        for item in langfuse.get_dataset(str(dataset_name), fetch_items_page_size=limit).items
+        (item.id, item.input, item.expected_output, item.dataset_id, item.dataset_name)
+        for item in langfuse.get_dataset(dataset_name, fetch_items_page_size=limit).items
     ]
-    return pd.DataFrame(list_items, columns=["input", "expected_output"])
+    df = pd.DataFrame(
+        list_items, columns=["id", "input", "expected_output", "dataset_id", "dataset_name"]
+    )
+    df["input"] = df["input"].apply(lambda x: json.dumps(x, ensure_ascii=False))
+    if isinstance(df["expected_output"].loc[0], dict):
+        df["expected_output"] = df["expected_output"].apply(
+            lambda x: json.dumps(x, ensure_ascii=False)
+        )
+    # reverse items to keep the original order
+    return df.iloc[::-1].reset_index(drop=True)
 
 
 @cli.command(name="export")
 def export_datasets(
     ctx: typer.Context,
     output_data_dir: str = typer.Option(help="Directory path to save the exported datasets"),
-    dataset_prefix: str = typer.Option(help="Langfuse prefix of the datasets's data to export"),
     datasets_to_export: str = typer.Option(
         "", help="Comma-separated list of datasets to export. e.g. 'dataset1,dataset2'"
     ),
@@ -92,15 +82,10 @@ def export_datasets(
         page_size = MAX_PAGE_SIZE
 
     langfuse: Langfuse = ctx.obj.get("langfuse")
-    for dataset_name in get_datasets(langfuse.api.datasets, dataset_prefix, datasets_to_export):
+    for dataset_name in get_datasets(langfuse.api.datasets, datasets_to_export):
         print(f"\n-> Dataset: {dataset_name}")
         df_items = get_dataset_items(langfuse, dataset_name, page_size)
-        df_items["input"] = df_items["input"].apply(lambda x: json.dumps(x, ensure_ascii=False))
-        if isinstance(df_items["expected_output"].loc[0], dict):
-            df_items["expected_output"] = df_items["expected_output"].apply(
-                lambda x: json.dumps(x, ensure_ascii=False)
-            )
-        df_items.to_csv(Path(output_data_dir, f"{dataset_name.name}.csv"), index=False)
+        df_items.to_csv(Path(output_data_dir, f"{dataset_name}.csv"), index=False)
         print(f"--> {len(df_items)} exported items.\n")
 
 
@@ -116,14 +101,14 @@ def get_files(input_dir: str, datasets_names: str) -> list[Path]:
     )
 
 
-def create_dataset(langfuse: Langfuse, path: Path, dataset_prefix: str):
-    dataset_name = DatasetName(dataset_prefix, path.stem)
+def create_dataset(langfuse: Langfuse, path: Path):
+    dataset_name = path.stem
     print(f"\n- Dataset: {dataset_name}")
-    df = pd.read_csv(path).drop_duplicates()
+    df = pd.read_csv(path, usecols=["input", "expected_output"]).drop_duplicates()
 
     try:
         # Get old items from the dataset
-        df_old_data = get_dataset_items(langfuse, dataset_name)
+        df_old_data = get_dataset_items(langfuse, dataset_name)[["input", "expected_output"]]
         # Remove duplicates in the new data
         df = pd.concat([df_old_data, df]).drop_duplicates(keep=False)
     except NotFoundError:
@@ -153,13 +138,12 @@ def create_dataset(langfuse: Langfuse, path: Path, dataset_prefix: str):
 def import_datasets(
     ctx: typer.Context,
     input_data_dir: str = typer.Option(help="Path's directory of the datasets's data"),
-    dataset_prefix: str = typer.Option(help="Langfuse prefix to import the datasets's data"),
     datasets_to_import: str = typer.Option(
         "", help="Comma-separated list of datasets to import. e.g. 'dataset1,dataset2'"
     ),
 ):
     for path in get_files(input_data_dir, datasets_to_import):
-        create_dataset(ctx.obj.get("langfuse"), path, dataset_prefix)
+        create_dataset(ctx.obj.get("langfuse"), path)
 
 
 if __name__ == "__main__":
