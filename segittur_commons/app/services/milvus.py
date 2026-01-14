@@ -180,6 +180,19 @@ class MilvusHandler:
         )
         return records
 
+    async def aget_records_with_retry(
+        self, offset: int = 0, limit: int = 10, retries: int = 1, **kwargs
+    ):
+        if retries == 0:
+            raise Exception(f"Information not found {kwargs}")
+        records: dict = self.aget_records(self.collection, offset=offset, limit=limit, **kwargs)
+        if records is None or len(records) == 0:
+            sleep(0.1)
+            return await self.aget_records_with_retry(
+                offset=offset, limit=limit, retries=retries - 1
+            )
+        return records
+
     async def aget_records(self, offset: int = 0, limit: int = 10, **kwargs) -> List[Dict]:
         records: List[Dict] = await self.vector_store.aclient.query(
             self.collection, offset=offset, limit=limit, **kwargs
