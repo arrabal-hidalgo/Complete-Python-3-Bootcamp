@@ -1,4 +1,5 @@
 import os
+from time import sleep
 from typing import Dict, List, Type
 
 from langchain_core.documents import Document
@@ -7,6 +8,10 @@ from langchain_text_splitters.base import TS, TextSplitter
 from pymilvus import AsyncMilvusClient, MilvusClient
 
 from segittur_commons.app.infrastructure.ai.llm.llm_provider import LlmProvider
+
+
+class NotFoundDocumentsException(Exception):
+    pass
 
 
 class MilvusHandler:
@@ -184,12 +189,12 @@ class MilvusHandler:
         self, offset: int = 0, limit: int = 10, retries: int = 1, **kwargs
     ):
         if retries == 0:
-            raise Exception(f"Information not found {kwargs}")
-        records: dict = self.aget_records(self.collection, offset=offset, limit=limit, **kwargs)
+            raise NotFoundDocumentsException(f"Information not found {kwargs}")
+        records: dict = await self.aget_records(offset=offset, limit=limit, **kwargs)
         if records is None or len(records) == 0:
             sleep(0.1)
             return await self.aget_records_with_retry(
-                offset=offset, limit=limit, retries=retries - 1
+                offset=offset, limit=limit, retries=retries - 1, **kwargs
             )
         return records
 
