@@ -190,7 +190,7 @@ class MilvusHandler:
     ):
         if retries == 0:
             raise NotFoundDocumentsException(f"Information not found {kwargs}")
-        records: dict = await self.aget_records(offset=offset, limit=limit, **kwargs)
+        records: List[dict] = await self.aget_records(offset=offset, limit=limit, **kwargs)
         if records is None or len(records) == 0:
             sleep(0.1)
             return await self.aget_records_with_retry(
