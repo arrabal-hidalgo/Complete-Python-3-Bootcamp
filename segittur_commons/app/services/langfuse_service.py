@@ -2,6 +2,7 @@ from typing import Any, Union
 
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langfuse import Langfuse, LangfuseSpan
+from langfuse._client.datasets import DatasetClient
 from langfuse.langchain import CallbackHandler
 from langfuse.model import ChatPromptClient, PromptClient
 from opentelemetry.util._decorator import _AgnosticContextManager
@@ -30,22 +31,25 @@ class LangfuseHandler:
         self, name: str, label: str = "latest", **kwargs
     ) -> Union[ChatPromptTemplate, PromptTemplate]:
         prompt = self.get_prompt_object(name, label, **kwargs)
-        args = {**kwargs, "metadata": {"config": {"langfusePrompt": name}}}
+        args = {
+            **kwargs,
+            "metadata": {"config": {"langfusePrompt": name, "version": prompt.version}},
+        }
 
         template = prompt.get_langchain_prompt()
         if isinstance(prompt, ChatPromptClient):
             return ChatPromptTemplate(template, **args)
         return PromptTemplate.from_template(template, **args)
 
-    def get_dataset(self, name: str):
+    def get_dataset(self, name: str) -> DatasetClient:
         return self.langfuse.get_dataset(name)
 
     def start_as_current_span(
         self, trace_id: str, trace_name: str
     ) -> Union[_AgnosticContextManager[LangfuseSpan], Any]:
         predefined_trace_id = Langfuse.create_trace_id(seed=trace_id)
-        return self.langfuse.start_as_current_span(
-            name=trace_name, trace_context={"trace_id": predefined_trace_id}
+        return self.langfuse.start_as_current_observation(
+            as_type="span", name=trace_name, trace_context={"trace_id": predefined_trace_id}
         )
 
 
