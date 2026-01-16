@@ -8,6 +8,11 @@ from langfuse import Langfuse, get_client
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from segittur_commons.scripts.utils import (
+    check_langfuse_connection,
+    get_list_args_from_str,
+)
+
 cli = typer.Typer()
 
 
@@ -38,14 +43,6 @@ class PromptModel(BaseModel):
     type: str
 
 
-def check_langfuse_connection(langfuse: Langfuse):
-    try:
-        langfuse.auth_check()
-    except Exception as e:
-        typer.echo(f"Auth check failed. Please check your credentials and config. Error: {e}")
-        raise typer.Exit()
-
-
 def clean_prompts(prompts: list[dict[str, Any]]) -> list[dict[Any, Any]]:
     return [
         {key: value for key, value in prompt.items() if key in PromptModel.model_fields}
@@ -54,7 +51,7 @@ def clean_prompts(prompts: list[dict[str, Any]]) -> list[dict[Any, Any]]:
 
 
 def get_list_prompts_from_str(list_arg: str) -> list[str]:
-    prompts_list = [p.strip() for p in list_arg.split(",")] if list_arg else []
+    prompts_list = get_list_args_from_str(list_arg) if list_arg else []
     print("\nPrompts:", prompts_list if prompts_list else "ALL")
     return prompts_list
 
@@ -150,7 +147,7 @@ def import_prompts(
     ]
     print("\n--- NEW PROMPTS ---")
     for prompt in new_prompts:
-        print(f"- {prompt.name}, versions: {prompt.version}")
+        print(f"- {prompt.name}, version: {prompt.version}")
     print("--------------")
     create_prompts(ctx.obj.get("langfuse"), new_prompts)
 
