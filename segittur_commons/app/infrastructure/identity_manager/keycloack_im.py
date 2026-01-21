@@ -67,7 +67,7 @@ class KeycloakIm:
             "grant_type": grant_type,
             "audience": audience,
             "claim_token": base64.urlsafe_b64encode(json.dumps(claims).encode()),
-            "claim_token_format": "urn:ietf:params:oauth:token-type:jwt",
+            "claim_token_format": "urn:ietf:params:oauth:token-type:jwt",  # nosec B105
         }
         payload = self.kc_openid._add_secret_key(payload)
         content_type = self.kc_openid.connection.headers.get("Content-Type")

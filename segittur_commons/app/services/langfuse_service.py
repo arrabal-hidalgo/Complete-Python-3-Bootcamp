@@ -62,7 +62,8 @@ class LangfuseHandler:
     def get_dataset_items(self, dataset: str | DatasetClient, **kwargs) -> list[DatasetItemClient]:
         dataset_obj = self.get_dataset(dataset, **kwargs) if isinstance(dataset, str) else dataset
         # reverse items to keep the original order
-        return dataset_obj.items[::-1]
+        list_items: list[DatasetItemClient] = dataset_obj.items[::-1]
+        return list_items
 
     def start_as_current_span(
         self, trace_id: str, trace_name: str
