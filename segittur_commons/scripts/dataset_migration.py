@@ -12,7 +12,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from segittur_commons.app.services.langfuse_service import LangfuseHandler
 from segittur_commons.scripts.utils import (
     check_langfuse_connection,
-    get_list_args_from_str,
+    get_files,
+    get_list_objects_from_str,
 )
 
 cli = typer.Typer()
@@ -24,7 +25,6 @@ class Settings(BaseSettings):
     langfuse_public_key: str = Field()
     langfuse_secret_key: str = Field()
     langfuse_host: str = Field()
-
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 
@@ -66,12 +66,12 @@ def restore_data(df: pd.DataFrame, input_cols: list[str], output_cols: list[str]
     return df[[DatasetCols.input, DatasetCols.expected_output]]
 
 
-def get_datasets(langfuse_handler: LangfuseHandler, datasets_names: str) -> list[str]:
-    if not datasets_names:
+def get_datasets(langfuse_handler: LangfuseHandler, list_datasets: list[str]) -> list[str]:
+    if not list_datasets:
         return [
             dataset.name for dataset in langfuse_handler.langfuse.api.datasets.list(limit=50).data
         ]
-    return get_list_args_from_str(datasets_names)
+    return list_datasets
 
 
 def get_dataset_items(
@@ -88,18 +88,6 @@ def get_dataset_items(
             lambda x: json.dumps(x, ensure_ascii=False)
         )
     return df.reset_index(drop=True)
-
-
-def get_files(input_dir: str, datasets_names: str) -> list[Path]:
-    base_path = Path(input_dir)
-    return (
-        list(base_path.glob("*.csv"))
-        if not datasets_names
-        else [
-            base_path.joinpath(f"{dataset_name}.csv")
-            for dataset_name in get_list_args_from_str(datasets_names)
-        ]
-    )
 
 
 def create_dataset(langfuse_handler: LangfuseHandler, path: Path):
@@ -171,7 +159,9 @@ def export_datasets(
         page_size = MAX_PAGE_SIZE
 
     langfuse_handler: LangfuseHandler = ctx.obj.get("langfuse_handler")
-    for dataset_name in get_datasets(langfuse_handler, datasets_to_export):
+
+    list_datasets = get_list_objects_from_str(datasets_to_export)
+    for dataset_name in get_datasets(langfuse_handler, list_datasets):
         print(f"\n-> Dataset: {dataset_name}")
         df_items = get_dataset_items(langfuse_handler, dataset_name, page_size)
         df_items.to_csv(Path(output_data_dir, f"{dataset_name}.csv"), index=False)
@@ -186,7 +176,8 @@ def import_datasets(
         "", help="Comma-separated list of datasets to import. e.g. 'dataset1,dataset2'"
     ),
 ):
-    for path in get_files(input_data_dir, datasets_to_import):
+    list_datasets = get_list_objects_from_str(datasets_to_import)
+    for path in get_files(input_data_dir, list_datasets, "csv"):
         create_dataset(ctx.obj.get("langfuse_handler"), path)
 
 
