@@ -2,7 +2,7 @@ from typing import Any, Union
 
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langfuse import Langfuse, LangfuseSpan
-from langfuse._client.datasets import DatasetClient
+from langfuse._client.datasets import DatasetClient, DatasetItemClient
 from langfuse.langchain import CallbackHandler
 from langfuse.model import ChatPromptClient, PromptClient
 from opentelemetry.util._decorator import _AgnosticContextManager
@@ -41,8 +41,29 @@ class LangfuseHandler:
             return ChatPromptTemplate(template, **args)
         return PromptTemplate.from_template(template, **args)
 
-    def get_dataset(self, name: str) -> DatasetClient:
-        return self.langfuse.get_dataset(name)
+    def get_langchain_prompt_and_config(
+        self, name: str, label: str = "latest", **kwargs
+    ) -> tuple[Union[ChatPromptTemplate, PromptTemplate], dict]:
+        prompt = self.get_prompt_object(name, label, **kwargs)
+        args = {
+            **kwargs,
+            "metadata": {"config": {"langfusePrompt": name, "version": prompt.version}},
+        }
+
+        template = prompt.get_langchain_prompt()
+        model_params = prompt.config.get("model_params", {})
+        if isinstance(prompt, ChatPromptClient):
+            return ChatPromptTemplate(template, **args), model_params
+        return PromptTemplate.from_template(template, **args), model_params
+
+    def get_dataset(self, name: str, **kwargs) -> DatasetClient:
+        return self.langfuse.get_dataset(name, **kwargs)
+
+    def get_dataset_items(self, dataset: str | DatasetClient, **kwargs) -> list[DatasetItemClient]:
+        dataset_obj = self.get_dataset(dataset, **kwargs) if isinstance(dataset, str) else dataset
+        # reverse items to keep the original order
+        list_items: list[DatasetItemClient] = dataset_obj.items[::-1]
+        return list_items
 
     def start_as_current_span(
         self, trace_id: str, trace_name: str

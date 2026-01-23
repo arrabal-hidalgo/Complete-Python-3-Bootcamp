@@ -1,12 +1,19 @@
 import json
+import os
+import re
 from pathlib import Path
-from typing import Any, Union
+from typing import Union
 
 import typer
-import yaml  # type: ignore
-from langfuse import Langfuse, get_client
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from segittur_commons.app.services.langfuse_service import LangfuseHandler
+from segittur_commons.scripts.utils import (
+    check_langfuse_connection,
+    get_files,
+    get_list_objects_from_str,
+)
 
 cli = typer.Typer()
 
@@ -38,60 +45,48 @@ class PromptModel(BaseModel):
     type: str
 
 
-def check_langfuse_connection(langfuse: Langfuse):
-    try:
-        langfuse.auth_check()
-    except Exception as e:
-        typer.echo(f"Auth check failed. Please check your credentials and config. Error: {e}")
-        raise typer.Exit()
+def get_prefix_and_prompt_name(prompt_full_name: str):
+    return re.findall(r"^\[(.*?)\](.*)", prompt_full_name)[0]
 
 
-def clean_prompts(prompts: list[dict[str, Any]]) -> list[dict[Any, Any]]:
+def get_prompt_versions(
+    langfuse_handler: LangfuseHandler, prefix_names_prompts: dict[str, list[str]]
+) -> dict[str, dict[str, list[int]]]:
+    prefix_prompt_versions = {}
+    for prompt in langfuse_handler.langfuse.api.prompts.list(limit=50).data:
+        try:
+            prompt_prefix, prompt_name = get_prefix_and_prompt_name(prompt.name)
+        except IndexError:
+            continue
+        if not prefix_names_prompts or prompt_name in prefix_names_prompts.get(prompt_prefix, []):
+            prefix_prompt_versions.setdefault(prompt_prefix, {})[prompt_name] = prompt.versions
+    return prefix_prompt_versions
+
+
+def get_prompt_objects(
+    langfuse_handler: LangfuseHandler, prompt_name: str, versions: list[int]
+) -> list[dict[str, str]]:
+    langfuse_prompts_client = langfuse_handler.langfuse.api.prompts
     return [
-        {key: value for key, value in prompt.items() if key in PromptModel.model_fields}
-        for prompt in prompts
+        {
+            key: value
+            for key, value in langfuse_prompts_client.get(prompt_name=prompt_name, version=version)
+            .dict()
+            .items()
+            if key in PromptModel.model_fields
+        }
+        for version in versions
     ]
 
 
-def get_list_prompts_from_str(list_arg: str) -> list[str]:
-    prompts_list = [p.strip() for p in list_arg.split(",")] if list_arg else []
-    print("\nPrompts:", prompts_list if prompts_list else "ALL")
-    return prompts_list
-
-
-def get_prompts(langfuse: Langfuse, prompts: list[str] = []) -> list[dict[str, str]]:
-    prompts_client = langfuse.api.prompts
-    list_prompts = prompts_client.list(limit=60).data
-    prompts_with_names = []
-    for prompt in list_prompts:
-        if prompt.name in prompts or not prompts:
-            prompt_versions = [
-                prompts_client.get(
-                    prompt_name=prompt.name.replace("/", "%2F"), version=prompt_version
-                ).dict()
-                for prompt_version in prompt.versions
-            ]
-            prompts_with_names.extend(prompt_versions)
-    return clean_prompts(prompts_with_names)
-
-
-def get_prompt_versions(langfuse: Langfuse, prompts: list[str] = []) -> dict[str, list[int]]:
-    prompts_client = langfuse.api.prompts
-    list_prompts = prompts_client.list(limit=60).data
-    return {
-        prompt.name: prompt.versions
-        for prompt in list_prompts
-        if prompt.name in prompts or not prompts
-    }
-
-
-def create_prompt(langfuse: Langfuse, prompt: PromptModel):
+def create_prompt(langfuse_handler: LangfuseHandler, prompt: PromptModel):
+    print(f"- {prompt.name}, version: {prompt.version}")
     content = (
         prompt.prompt
         if prompt.type == "text"
-        else [prompt_object.model_dump() for prompt_object in prompt.prompt]  # type: ignore
+        else [prompt_object.model_dump() for prompt_object in prompt.prompt]
     )
-    langfuse.create_prompt(  # type: ignore
+    langfuse_handler.langfuse.create_prompt(
         type=prompt.type,
         name=prompt.name,
         prompt=content,
@@ -101,58 +96,89 @@ def create_prompt(langfuse: Langfuse, prompt: PromptModel):
     )
 
 
-def create_prompts(langfuse: Langfuse, prompts: list[PromptModel]):
-    for prompt in prompts:
-        create_prompt(langfuse, prompt)
+def get_list_prompts_from_args(list_args: str) -> dict[str, list[str]]:
+    list_prompts_args = get_list_objects_from_str(list_args)
+    prefix_names_dict = {}
+    list_aux = list_prompts_args.copy()
+    for prompt_full_name in list_prompts_args:
+        try:
+            prompt_prefix, prompt_name = get_prefix_and_prompt_name(prompt_full_name)
+            prefix_names_dict.setdefault(prompt_prefix, []).append(prompt_name)
+        except IndexError:
+            print(f"\n>>>>>> Incorrect prompt name format ({prompt_full_name})!!! <<<<<<\n")
+            list_aux.remove(prompt_full_name)
+    if list_prompts_args and not list_aux:
+        raise Exception(f"None of the prompts have a correct name format: {list_prompts_args}")
+    return prefix_names_dict
 
 
 @cli.callback()
 def main(ctx: typer.Context):
     ctx.ensure_object(dict)
-    langfuse = get_client()
-    check_langfuse_connection(langfuse)
-    ctx.obj["langfuse"] = langfuse
+    langfuse_handler = LangfuseHandler()
+    check_langfuse_connection(langfuse_handler.langfuse)
+    ctx.obj["langfuse_handler"] = langfuse_handler
 
 
 @cli.command(name="export")
 def export_prompts(
     ctx: typer.Context,
-    output_path: str = typer.Option(None, help="Path to save the exported prompts"),
+    output_data_dir: str = typer.Option(help="Directory path to save the exported prompts"),
     prompts_to_export: str = typer.Option(
         "", help="Comma-separated list of prompts to export. e.g. 'prompt1,prompt2'"
     ),
 ):
-    prompts = get_prompts(ctx.obj.get("langfuse"), get_list_prompts_from_str(prompts_to_export))
-    with open(output_path, "w", encoding="utf-8") as file:
-        if Path(output_path).suffix == ".json":
-            json.dump(prompts, file, indent=2, ensure_ascii=False)
-        else:
-            yaml.dump(prompts, file)
+    langfuse_handler: LangfuseHandler = ctx.obj.get("langfuse_handler")
+
+    prefix_names_dict = get_list_prompts_from_args(prompts_to_export)
+    prefix_prompt_versions = get_prompt_versions(langfuse_handler, prefix_names_dict).items()
+
+    for prompt_prefix, prompt_versions in prefix_prompt_versions:
+        dir_path = Path(output_data_dir).joinpath(prompt_prefix)
+        os.makedirs(dir_path, exist_ok=True)
+        for prompt_name, versions in prompt_versions.items():
+            prompt_full_name = f"[{prompt_prefix}]{prompt_name}"
+            prompts = get_prompt_objects(langfuse_handler, prompt_full_name, versions)
+            with open(dir_path.joinpath(f"{prompt_name}.json"), "w", encoding="utf-8") as file:
+                print(f"-> Prompt: {prompt_full_name}")
+                json.dump(prompts, file, indent=2, ensure_ascii=False)
 
 
 @cli.command(name="import")
 def import_prompts(
     ctx: typer.Context,
-    input_path: str = typer.Option(None, help="Path to import the exported prompts"),
+    input_data_dir: str = typer.Option(help="Path's directory of the prompts's data"),
     prompts_to_import: str = typer.Option(
         "", help="Comma-separated list of prompts to import. e.g. 'prompt1,prompt2'"
     ),
 ):
-    prompts_list = get_list_prompts_from_str(prompts_to_import)
-    old_prompts_versions = get_prompt_versions(ctx.obj.get("langfuse"), prompts_list)
-    with open(input_path, encoding="utf-8") as file:
-        prompts = json.load(file) if Path(input_path).suffix == ".json" else yaml.safe_load(file)
-    new_prompts = [
-        PromptModel(**prompt)
-        for prompt in prompts
-        if prompt["name"] in prompts_list or not prompts_list
-        if prompt["version"] not in old_prompts_versions.get(prompt["name"], [])
-    ]
-    print("\n--- NEW PROMPTS ---")
-    for prompt in new_prompts:
-        print(f"- {prompt.name}, versions: {prompt.version}")
-    print("--------------")
-    create_prompts(ctx.obj.get("langfuse"), new_prompts)
+    langfuse_handler: LangfuseHandler = ctx.obj.get("langfuse_handler")
+
+    prefix_names_dict = get_list_prompts_from_args(prompts_to_import)
+    old_prefix_prompt_versions = get_prompt_versions(langfuse_handler, prefix_names_dict)
+
+    base_path = Path(input_data_dir)
+    for subdir in base_path.iterdir():
+        if subdir.is_dir():
+            if not (list_prompts := prefix_names_dict.get(subdir.name, [])) and prefix_names_dict:
+                continue
+            print(f"\n---- Prompts group: {subdir.name} ----")
+            list_files = get_files(base_path.joinpath(subdir.name), list_prompts, "json")
+            for file_path in list_files:
+                with open(file_path, "r", encoding="utf-8") as file:
+                    prompts = json.load(file)
+                new_prompts = [
+                    PromptModel(**prompt)
+                    for prompt in prompts
+                    if prompt["version"]
+                    not in old_prefix_prompt_versions.get(subdir.name, {}).get(file_path.stem, [])
+                ]
+                if not new_prompts:
+                    continue
+                print(f"NEW VERSIONS ({file_path.name}):")
+                for prompt in new_prompts:
+                    create_prompt(langfuse_handler, prompt)
+                print("--------------")
 
 
 if __name__ == "__main__":
