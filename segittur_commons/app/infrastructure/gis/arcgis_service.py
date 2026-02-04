@@ -125,7 +125,7 @@ class ArcGISService:
     def find_optimal_route(
         self,
         stops_data: FeatureCollection,
-        time_of_day: Optional[int] = None,
+        time_of_day: Optional[dt.datetime] = None,
         time_zone_for_time_of_day: str = "UTC",
         preserve_terminal_stops: PreserveStops = PreserveStops.NONE,
         travel_mode: Optional[str] = None,
@@ -136,7 +136,7 @@ class ArcGISService:
 
         Args:
             stops_data (FeatureCollection): GeoJSON FeatureCollection of stop points.
-            time_of_day (Optional[int]): Start time in milliseconds since epoch. Defaults to current time.
+            time_of_day (Optional[datetime]): Start time in milliseconds since epoch. Defaults to current time.
             time_zone_for_time_of_day (str): Time zone for the start time. Defaults to "UTC".
             preserve_terminal_stops (PreserveStops): Whether to preserve start/end stops.
             travel_mode (Optional[str]): The travel mode to use for the route calculation (e.g., 'Driving Time').

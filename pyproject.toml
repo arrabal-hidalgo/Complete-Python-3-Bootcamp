@@ -37,27 +37,17 @@ package-mode = true
 packages = [{ include = "segittur_commons" }]
 
 [tool.poetry.group.dev.dependencies]
+black = "*"
+ruff = "*"
+mypy = "*"
+types-requests = "*"
+bandit = "*"
 pip-audit = "~2.9"
 pytest = "~8.3"
 pytest-asyncio = "~0.25"
 pytest-cov = "~6.1"
 coverage = "~7.6"
 factory-boy = "~3.3"
-
-[tool.poetry.group.quality]
-optional = true
-
-[tool.poetry.group.quality.dependencies]
-ruff = "*"
-mypy = "*"
-black = "*"
-types-requests = "*"
-
-[tool.poetry.group.security]
-optional = true
-
-[tool.poetry.group.security.dependencies]
-bandit = "*"
 
 [tool.black]
 line-length = 100
