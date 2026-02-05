@@ -3,9 +3,10 @@ FROM python:3.12-slim-bookworm AS commons
 ARG POETRY_VERSION=2.0.1
 ARG BUILD_DEPS='build-essential'
 
-ARG UID=1000
-ARG USER=commons
-ARG GROUP=commons
+# ARG UID=1000
+# ARG GID=1000
+# ARG USER=commons
+# ARG GROUP=commons
 ARG WORKSPACE_FOLDER=segittur_commons
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on \
@@ -23,7 +24,7 @@ COPY pyproject.toml .
 RUN apt-get -q update \
   && apt-get install --no-install-recommends -yq $BUILD_DEPS \
   && pip install "poetry==$POETRY_VERSION" \
-  && poetry install --no-interaction --no-ansi --no-root \
+  && poetry install --no-interaction --no-ansi --no-root --with dev \
   && poetry run pip install --upgrade pip && rm -rf ${POETRY_CACHE_DIR}\
   && apt autoremove -y && apt-get clean && apt-get purge -y --auto-remove \
   && dpkg -l | grep ^rc | awk '{print $2}' | xargs apt-get purge -y \

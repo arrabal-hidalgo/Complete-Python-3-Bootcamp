@@ -1,7 +1,3 @@
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
 [project]
 name = "segittur-commons"
 version = "0.3.16"
@@ -11,6 +7,7 @@ authors = [
   { name = "Sofía Cerdá Muñoz", email = "sofia.cerda@sngular.com" }
 ]
 readme = "README.md"
+
 requires-python = ">=3.11,<3.13"
 dependencies = [
     "langchain (==0.3.27)",
@@ -49,6 +46,13 @@ pytest-cov = "~6.1"
 coverage = "~7.6"
 factory-boy = "~3.3"
 
+[tool.poetry.group.dev]
+optional = true
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.black]
 line-length = 100
 exclude = '''
@@ -62,12 +66,12 @@ exclude = '''
 [tool.isort]
 profile = "black"
 
-[tool.pytest.ini_options]
-testpaths = [ "tests" ]
-
 [tool.mypy]
 python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 no_implicit_optional = false
+
+[tool.pytest.ini_options]
+testpaths = [ "tests" ]
