@@ -1,6 +1,6 @@
 import os
 
-from segittur_commons.app.infrastructure.destination.external_api import ExternalApi
+from segittur_commons.app.infrastructure.external_apis.external_api import ExternalApi
 
 
 class DestinationAPI(ExternalApi):

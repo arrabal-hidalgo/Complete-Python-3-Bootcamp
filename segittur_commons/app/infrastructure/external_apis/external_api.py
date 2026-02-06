@@ -1,6 +1,9 @@
+import logging
 from abc import ABC, abstractmethod
 
 import requests
+
+logger = logging.getLogger("S8")
 
 
 class ExternalApi(ABC):
@@ -24,10 +27,14 @@ class ExternalApi(ABC):
         raise NotImplementedError
 
     def call_external_api(
-        self, url_template: str, method: str = "GET", kwargs_url={}, **kwargs_request
+        self,
+        url: str,
+        method: str = "GET",
+        timeout: float | tuple = 10,
+        **kwargs_request,
     ):
-        url = url_template.format(**kwargs_url)
-        response = requests.request(method, url, **kwargs_request)
+        logger.debug(f"Making the request: URL={url}, kwargs_request={kwargs_request}")
+        response = requests.request(method, url, timeout=timeout, **kwargs_request)
         response.raise_for_status()
         return response
 
