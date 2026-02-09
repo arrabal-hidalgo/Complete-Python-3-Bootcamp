@@ -133,7 +133,6 @@ unit_tests:
     - *pull_gitlab_test_image
   script:
     - echo "🚀 Launching unit tests"
-    - pwd
     - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE pytest --cov --cov-report term --cov-report xml:coverage.xml --junitxml=report.xml --cov-config=.coveragerc tests/unit
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
