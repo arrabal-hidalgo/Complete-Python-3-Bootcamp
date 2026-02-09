@@ -79,7 +79,6 @@ code_quality:
     - *pull_gitlab_test_image
   script:
     - echo "🔍 Running code quality checks inside the container"
-    # - docker run --rm $GITLAB_TEST_IMAGE /bin/sh -c "black --check segittur_commons/app && ruff check segittur_commons/app && mypy segittur_commons/app"
     - |
       docker run --rm $GITLAB_TEST_IMAGE /bin/sh -c "
         echo '--- Black ---' && black --check segittur_commons/app && \
