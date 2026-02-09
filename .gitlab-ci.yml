@@ -61,7 +61,7 @@ prepare_test_image:
   script:
     - *docker_gitlab_login
     - echo "🏗️ Building Docker Image to test ONCE $GITLAB_TEST_IMAGE"
-    - docker build --target commons -t $GITLAB_TEST_IMAGE -f .devcontainer/Dockerfile .
+    - docker build --target common-test -t $GITLAB_TEST_IMAGE -f .devcontainer/Dockerfile .
     - echo "Pushing to GitLab Registry"
     - docker push $GITLAB_TEST_IMAGE
   rules:
