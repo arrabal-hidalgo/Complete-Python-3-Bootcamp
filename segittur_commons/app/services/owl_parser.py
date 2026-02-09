@@ -1,6 +1,5 @@
 from typing import Any
 
-from app.global_context import DEFAULT_LLM_LANGUAGE_ID
 from owlready2 import (
     DataPropertyClass,
     ObjectPropertyClass,
@@ -10,6 +9,8 @@ from owlready2 import (
 )
 from owlready2.class_construct import And, Or, Restriction
 from owlready2.entity import ThingClass
+
+from segittur_commons.config.global_context import DEFAULT_LLM_LANGUAGE_ID
 
 
 class OWLParser:
