@@ -13,6 +13,7 @@ variables:
   IMAGE_NAME: segittur-commons
   TEST_IMAGE_TAG: test-$CI_COMMIT_SHORT_SHA
   GITLAB_TEST_IMAGE: $CI_REGISTRY_IMAGE:$TEST_IMAGE_TAG
+  BIN_DIR: /usr/local/segittur_commons/.venv/bin
   DOCKER_HOST: tcp://docker:2375
   DOCKER_TLS_CERTDIR: ""
   DOCKER_DRIVER: overlay2
@@ -81,9 +82,9 @@ code_quality:
     - echo "🔍 Running code quality checks inside the container"
     - |
       docker run --rm $GITLAB_TEST_IMAGE /bin/sh -c "
-        echo '--- Black ---' && black --check segittur_commons/app && \
-        echo '--- Ruff ---' && ruff check segittur_commons/app && \
-        echo '--- MyPy ---' && mypy segittur_commons/app
+        echo '--- Black ---' && ${BIN_DIR}/black --check segittur_commons/app && \
+        echo '--- Ruff ---' && ${BIN_DIR}/ruff check segittur_commons/app && \
+        echo '--- MyPy ---' && ${BIN_DIR}/mypy segittur_commons/app
       "
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
@@ -99,7 +100,7 @@ code_security:
     - *pull_gitlab_test_image
   script:
     - echo "🛡️ Running security checks inside the container"
-    - docker run --rm $GITLAB_TEST_IMAGE bandit -r segittur_commons/app
+    - docker run --rm $GITLAB_TEST_IMAGE ${BIN_DIR}/bandit -r segittur_commons/app
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
@@ -114,7 +115,7 @@ dependencies_security:
     - *pull_gitlab_test_image
   script:
     - echo "🛡️ Running security dependencies checks inside the container"
-    - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE /usr/local/segittur_commons/.venv/bin/pip-audit --cache-dir /tmp
+    - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE ${BIN_DIR}/pip-audit --cache-dir /tmp
   rules:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
@@ -133,7 +134,7 @@ unit_tests:
     - *pull_gitlab_test_image
   script:
     - echo "🚀 Launching unit tests"
-    - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE pytest --cov --cov-report term --cov-report xml:coverage.xml --junitxml=report.xml --cov-config=.coveragerc tests/unit
+    - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE ${BIN_DIR}/pytest --cov --cov-report term --cov-report xml:coverage.xml --junitxml=report.xml --cov-config=.coveragerc tests/unit
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     expire_in: 1 week

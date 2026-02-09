@@ -3,10 +3,6 @@ FROM python:3.12-slim-bookworm AS commons
 ARG POETRY_VERSION=2.0.1
 ARG BUILD_DEPS='build-essential'
 
-# ARG UID=1000
-# ARG GID=1000
-# ARG USER=commons
-# ARG GROUP=commons
 ARG WORKSPACE_FOLDER=segittur_commons
 
 ENV PIP_DISABLE_PIP_VERSION_CHECK=on \

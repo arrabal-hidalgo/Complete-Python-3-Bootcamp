@@ -27,11 +27,7 @@ class ExternalApi(ABC):
         raise NotImplementedError
 
     def call_external_api(
-        self,
-        url: str,
-        method: str = "GET",
-        timeout: float | tuple = 10,
-        **kwargs_request,
+        self, url: str, method: str = "GET", timeout: float | tuple = 10, **kwargs_request
     ):
         logger.debug(f"Making the request: URL={url}, kwargs_request={kwargs_request}")
         response = requests.request(method, url, timeout=timeout, **kwargs_request)
