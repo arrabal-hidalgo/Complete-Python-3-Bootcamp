@@ -1,6 +1,6 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List, Type
+from typing import Sequence, Type
 
 from jwt.exceptions import InvalidTokenError
 from pydantic import SecretStr
@@ -53,10 +53,14 @@ class Authenticator:
     into a user entity using a chain of parsers.
     """
 
-    def __init__(self, identity_manager: KeycloakIm, custom_parsers: List[Type[UserParser]] = None):
+    def __init__(
+        self,
+        identity_manager: KeycloakIm,
+        custom_parsers: Sequence[Type[UserParser]] | None = None,
+    ):
         self.identity_manager = identity_manager
         # Standard parser are always included. Custom parsers are checked first.
-        self.parsers = (custom_parsers or []) + [RegisteredUserParser]
+        self.parsers = list(custom_parsers or []) + [RegisteredUserParser]
 
     def get_current_user(self, token: str) -> AuthenticatedUser:
         access_token = self.identity_manager.decode(token)
