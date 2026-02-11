@@ -1,16 +1,13 @@
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
-
 [project]
 name = "segittur-commons"
-version = "0.3.16"
+version = "0.3.17"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
   { name = "Alejandro Arrabal Hidalgo", email = "alejandro.arrabal@sngular.com" },
   { name = "Sofía Cerdá Muñoz", email = "sofia.cerda@sngular.com" }
 ]
 readme = "README.md"
+
 requires-python = ">=3.11,<3.13"
 dependencies = [
     "langchain (==0.3.27)",
@@ -37,6 +34,11 @@ package-mode = true
 packages = [{ include = "segittur_commons" }]
 
 [tool.poetry.group.dev.dependencies]
+black = "*"
+ruff = "*"
+mypy = "*"
+types-requests = "*"
+bandit = "*"
 pip-audit = "~2.9"
 pytest = "~8.3"
 pytest-asyncio = "~0.25"
@@ -44,20 +46,12 @@ pytest-cov = "~6.1"
 coverage = "~7.6"
 factory-boy = "~3.3"
 
-[tool.poetry.group.quality]
+[tool.poetry.group.dev]
 optional = true
 
-[tool.poetry.group.quality.dependencies]
-ruff = "*"
-mypy = "*"
-black = "*"
-types-requests = "*"
-
-[tool.poetry.group.security]
-optional = true
-
-[tool.poetry.group.security.dependencies]
-bandit = "*"
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 100
@@ -72,12 +66,12 @@ exclude = '''
 [tool.isort]
 profile = "black"
 
-[tool.pytest.ini_options]
-testpaths = [ "tests" ]
-
 [tool.mypy]
 python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 no_implicit_optional = false
+
+[tool.pytest.ini_options]
+testpaths = [ "tests" ]

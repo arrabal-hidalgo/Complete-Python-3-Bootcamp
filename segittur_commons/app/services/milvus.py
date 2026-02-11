@@ -1,8 +1,9 @@
 import os
 from time import sleep
-from typing import Dict, List, Type
+from typing import Dict, List, Type, cast
 
 from langchain_core.documents import Document
+from langchain_core.embeddings import Embeddings
 from langchain_milvus import Milvus
 from langchain_text_splitters.base import TS, TextSplitter
 from pymilvus import AsyncMilvusClient, MilvusClient
@@ -34,11 +35,13 @@ class MilvusHandler:
         self.db = db or os.getenv("MILVUS_DATABASE", "SEGITTUR_AVC")
         self.collection = collection or os.getenv("MILVUS_COLLECTION", "general_vectorstore")
 
-        self.embeddings_fn = LlmProvider.create_llm(model=model_embeddings, **kwargs_model)
+        self.embeddings_fn = cast(
+            Embeddings, LlmProvider.create_llm(model=model_embeddings, **kwargs_model)
+        )
 
         self.vector_store = Milvus(
             embedding_function=self.embeddings_fn,
-            collection_name=self.collection,
+            collection_name=str(self.collection),
             connection_args={"uri": self.uri, "token": self.token, "db_name": self.db},
             auto_id=kwargs_store.pop("auto_id", True),
             **kwargs_store,
@@ -61,9 +64,9 @@ class MilvusHandler:
     ) -> List[Document]:
         text_splitter: TextSplitter = text_splitter_fn(**kwargs_splitter)
         docs: List[Document] = (
-            text_splitter.create_documents(texts, metadatas)
+            text_splitter.create_documents(cast(List[str], texts), metadatas)
             if isinstance(texts[0], str)
-            else text_splitter.split_documents(texts)
+            else text_splitter.split_documents(cast(List[Document], texts))
         )
         return docs
 
@@ -94,7 +97,7 @@ class MilvusHandler:
         # If texts are in the desired format (Document objects)
         # and no splitting is required, we can return them directly.
         if not text_splitter_fn and isinstance(texts[0], Document):
-            return texts
+            return cast(List[Document], texts)
 
         # If a splitter is provided, delegate the processing.
         if text_splitter_fn:
@@ -104,7 +107,7 @@ class MilvusHandler:
         _metadatas = (metadatas or [{}]) * len(texts)
         return [
             Document(page_content=text, metadata=metadata)
-            for text, metadata in zip(texts, _metadatas)
+            for text, metadata in zip(cast(List[str], texts), _metadatas)
         ]
 
     def add_documents(

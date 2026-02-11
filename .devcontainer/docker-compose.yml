@@ -1,13 +1,11 @@
 services:
+
   app:
     container_name: commons-dev
     build:
       context: ../
       dockerfile: .devcontainer/Dockerfile
       args:
-        UID: $UID
-        GID: $GID
-        USER: $USER
         WORKSPACE_FOLDER: $WORKSPACE_FOLDER
     user: $UID:$GID
     volumes:

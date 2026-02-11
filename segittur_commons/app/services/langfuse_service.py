@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any, Union, cast
 
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langfuse import Langfuse, LangfuseSpan
@@ -21,11 +21,11 @@ class LangfuseHandler:
         self.langfuse.create_prompt(name, prompt_text, type="text", **kwargs)
 
     def get_prompt_object(self, name: str, label: str = "latest", **kwargs) -> PromptClient:
-        return self.langfuse.get_prompt(name, label=label, **kwargs)
+        prompt_object: PromptClient = self.langfuse.get_prompt(name, label=label, **kwargs)
+        return prompt_object
 
-    def get_langfuse_prompt(self, name: str, label: str = "latest", **kwargs) -> str:
-        prompt: str = self.get_prompt_object(name, label, **kwargs).prompt
-        return prompt
+    def get_langfuse_prompt(self, name: str, label: str = "latest", **kwargs):
+        return self.get_prompt_object(name, label, **kwargs).prompt
 
     def get_langchain_prompt(
         self, name: str, label: str = "latest", **kwargs
@@ -39,7 +39,7 @@ class LangfuseHandler:
         template = prompt.get_langchain_prompt()
         if isinstance(prompt, ChatPromptClient):
             return ChatPromptTemplate(template, **args)
-        return PromptTemplate.from_template(template, **args)
+        return PromptTemplate.from_template(cast(str, template), **args)
 
     def get_langchain_prompt_and_config(
         self, name: str, label: str = "latest", **kwargs
@@ -54,10 +54,11 @@ class LangfuseHandler:
         model_params = prompt.config.get("model_params", {})
         if isinstance(prompt, ChatPromptClient):
             return ChatPromptTemplate(template, **args), model_params
-        return PromptTemplate.from_template(template, **args), model_params
+        return PromptTemplate.from_template(cast(str, template), **args), model_params
 
     def get_dataset(self, name: str, **kwargs) -> DatasetClient:
-        return self.langfuse.get_dataset(name, **kwargs)
+        dataset: DatasetClient = self.langfuse.get_dataset(name, **kwargs)
+        return dataset
 
     def get_dataset_items(self, dataset: str | DatasetClient, **kwargs) -> list[DatasetItemClient]:
         dataset_obj = self.get_dataset(dataset, **kwargs) if isinstance(dataset, str) else dataset
