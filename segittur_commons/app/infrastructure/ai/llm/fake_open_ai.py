@@ -3,7 +3,7 @@ from typing import Any
 
 from langchain_core.language_models import GenericFakeChatModel
 from langchain_core.language_models.base import LanguageModelInput
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
 
@@ -54,7 +54,7 @@ class FakeOpenAI(ChatOpenAI):
         config: RunnableConfig | None = None,
         stop: list[str] | None = None,
         **kwargs: Any,
-    ) -> BaseMessage:
+    ) -> AIMessage:
         return FakeLLM.CHAT.invoke("random")
 
     def create(self, model, file):

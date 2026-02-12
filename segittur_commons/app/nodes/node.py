@@ -9,9 +9,10 @@ from segittur_commons.app.entities.graph import NodeType
 from segittur_commons.app.services.llm_model import load_llm_model
 
 TAgent = TypeVar("TAgent", bound=Agent)
+TState = TypeVar("TState", bound=BaseModel)
 
 
-class Node(ABC, Generic[TAgent]):
+class Node(ABC, Generic[TAgent, TState]):
     name: NodeType
     agent_class: type[TAgent]
 
@@ -27,10 +28,10 @@ class Node(ABC, Generic[TAgent]):
     def _get_llm(self, model: str, **model_params) -> Any:
         return load_llm_model(model, **model_params)
 
-    def get_router(self, state: BaseModel) -> NodeType | str:
+    def get_router(self, state: TState) -> NodeType | str:
         raise NotImplementedError
 
-    def get_path(self, state: BaseModel) -> str:
+    def get_path(self, state: TState) -> str:
         return (
             next_node.value
             if isinstance(next_node := self.get_router(state), NodeType)
@@ -38,5 +39,5 @@ class Node(ABC, Generic[TAgent]):
         )
 
     @abstractmethod
-    def call(self, state: BaseModel):
+    def call(self, state: TState):
         raise NotImplementedError

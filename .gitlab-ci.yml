@@ -128,7 +128,6 @@ unit_tests:
   stage: testing
   extends: .dind_service
   needs: ["prepare_test_image"]
-  when: always
   before_script:
     - *pull_gitlab_test_image
   script:
