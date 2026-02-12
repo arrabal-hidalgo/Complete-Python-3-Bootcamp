@@ -54,7 +54,7 @@ class FakeOpenAI(ChatOpenAI):
         config: RunnableConfig | None = None,
         stop: list[str] | None = None,
         **kwargs: Any,
-    ) -> BaseMessage:
+    ) -> AIMessage:
         return FakeLLM.CHAT.invoke("random")
 
     def create(self, model, file):
