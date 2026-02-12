@@ -18,3 +18,7 @@ class AuthenticatedUser(BaseModel):
     @property
     def token(self):
         return self.access_token.get_secret_value()
+
+
+class AnonymousUser(AuthenticatedUser):
+    ref: str | None = None
