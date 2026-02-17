@@ -1,6 +1,6 @@
 [project]
 name = "segittur-commons"
-version = "0.3.19"
+version = "0.3.20"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
   { name = "Alejandro Arrabal Hidalgo", email = "alejandro.arrabal@sngular.com" },
