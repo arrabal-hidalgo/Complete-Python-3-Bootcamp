@@ -14,7 +14,7 @@ dependencies = [
     "langchain-openai (>=0.3.32,<1.2.0)",
     "langchain-text-splitters (>=0.3.0,<1.2.0)",
     "langchain-milvus (>=0.2.0,<0.3.0)",
-    "langfuse (==3.14.1)",
+    "langfuse (==3.8.0)",
     "owlready2 (==0.48)",
     "pydantic-settings (>=2.0,<3.0)",
     "azure-storage-blob (>=12.25.1,<12.26.0)",
