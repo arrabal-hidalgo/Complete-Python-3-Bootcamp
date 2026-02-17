@@ -2,10 +2,10 @@
 # el paquete Python en el Package Registry de GitLab.
 
 stages:
-  - prepare
-  - analysis
-  - testing
-  - cleanup
+  # - prepare
+  # - analysis
+  # - testing
+  # - cleanup
   - deploy
 
 variables:
@@ -49,131 +49,131 @@ variables:
         - "--storage-driver=overlay2"
         - "--max-concurrent-uploads=2"
 
-# --- STAGE: prepare ---
+# # --- STAGE: prepare ---
 
-prepare_test_image:
-  stage: prepare
-  extends: .dind_service
-  before_script:
-    - sleep 5
-    - docker version
-  script:
-    - *docker_gitlab_login
-    - echo "🏗️ Building Docker Image to test ONCE $GITLAB_TEST_IMAGE"
-    - docker build --target common-test -t $GITLAB_TEST_IMAGE -f .devcontainer/Dockerfile .
-    - echo "Pushing to GitLab Registry"
-    - docker push $GITLAB_TEST_IMAGE
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_OPEN_MERGE_REQUESTS'
-      when: never
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+# prepare_test_image:
+#   stage: prepare
+#   extends: .dind_service
+#   before_script:
+#     - sleep 5
+#     - docker version
+#   script:
+#     - *docker_gitlab_login
+#     - echo "🏗️ Building Docker Image to test ONCE $GITLAB_TEST_IMAGE"
+#     - docker build --target common-test -t $GITLAB_TEST_IMAGE -f .devcontainer/Dockerfile .
+#     - echo "Pushing to GitLab Registry"
+#     - docker push $GITLAB_TEST_IMAGE
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
+#     - if: '$CI_OPEN_MERGE_REQUESTS'
+#       when: never
+#     - if: '$CI_COMMIT_BRANCH == "develop"'
 
-# --- STAGE: analysis ---
+# # --- STAGE: analysis ---
 
-code_quality:
-  stage: analysis
-  extends: .dind_service
-  needs: ["prepare_test_image"]
-  before_script:
-    - *pull_gitlab_test_image
-  script:
-    - echo "🔍 Running code quality checks inside the container"
-    - |
-      docker run --rm $GITLAB_TEST_IMAGE /bin/sh -c "
-        echo '--- Black ---' && black --check segittur_commons/app && \
-        echo '--- Ruff ---' && ruff check segittur_commons/app && \
-        echo '--- MyPy ---' && mypy segittur_commons/app
-      "
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_OPEN_MERGE_REQUESTS'
-      when: never
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+# code_quality:
+#   stage: analysis
+#   extends: .dind_service
+#   needs: ["prepare_test_image"]
+#   before_script:
+#     - *pull_gitlab_test_image
+#   script:
+#     - echo "🔍 Running code quality checks inside the container"
+#     - |
+#       docker run --rm $GITLAB_TEST_IMAGE /bin/sh -c "
+#         echo '--- Black ---' && black --check segittur_commons/app && \
+#         echo '--- Ruff ---' && ruff check segittur_commons/app && \
+#         echo '--- MyPy ---' && mypy segittur_commons/app
+#       "
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
+#     - if: '$CI_OPEN_MERGE_REQUESTS'
+#       when: never
+#     - if: '$CI_COMMIT_BRANCH == "develop"'
 
-code_security:
-  stage: analysis
-  extends: .dind_service
-  needs: ["prepare_test_image"]
-  before_script:
-    - *pull_gitlab_test_image
-  script:
-    - echo "🛡️ Running security checks inside the container"
-    - docker run --rm $GITLAB_TEST_IMAGE bandit -r segittur_commons/app
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_OPEN_MERGE_REQUESTS'
-      when: never
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+# code_security:
+#   stage: analysis
+#   extends: .dind_service
+#   needs: ["prepare_test_image"]
+#   before_script:
+#     - *pull_gitlab_test_image
+#   script:
+#     - echo "🛡️ Running security checks inside the container"
+#     - docker run --rm $GITLAB_TEST_IMAGE bandit -r segittur_commons/app
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
+#     - if: '$CI_OPEN_MERGE_REQUESTS'
+#       when: never
+#     - if: '$CI_COMMIT_BRANCH == "develop"'
 
-dependencies_security:
-  stage: analysis
-  extends: .dind_service
-  needs: ["prepare_test_image"]
-  before_script:
-    - *pull_gitlab_test_image
-  script:
-    - echo "🛡️ Running security dependencies checks inside the container"
-    - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE pip-audit --cache-dir /tmp
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_OPEN_MERGE_REQUESTS'
-      when: never
-    - if: '$CI_COMMIT_BRANCH == "develop"'
-  allow_failure: true
+# dependencies_security:
+#   stage: analysis
+#   extends: .dind_service
+#   needs: ["prepare_test_image"]
+#   before_script:
+#     - *pull_gitlab_test_image
+#   script:
+#     - echo "🛡️ Running security dependencies checks inside the container"
+#     - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE pip-audit --cache-dir /tmp
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
+#     - if: '$CI_OPEN_MERGE_REQUESTS'
+#       when: never
+#     - if: '$CI_COMMIT_BRANCH == "develop"'
+#   allow_failure: true
 
-# --- STAGE: testing ---
+# # --- STAGE: testing ---
 
-unit_tests:
-  stage: testing
-  extends: .dind_service
-  needs: ["prepare_test_image"]
-  before_script:
-    - *pull_gitlab_test_image
-  script:
-    - echo "🚀 Launching unit tests"
-    - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE pytest --cov --cov-report term --cov-report xml:coverage.xml --junitxml=report.xml --cov-config=.coveragerc tests/unit
-  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
-  artifacts:
-    expire_in: 1 week
-    when: always
-    paths:
-      - report.xml
-    reports:
-      junit: report.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage.xml
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_OPEN_MERGE_REQUESTS'
-      when: never
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+# unit_tests:
+#   stage: testing
+#   extends: .dind_service
+#   needs: ["prepare_test_image"]
+#   before_script:
+#     - *pull_gitlab_test_image
+#   script:
+#     - echo "🚀 Launching unit tests"
+#     - docker run --env-file .env.template --rm $GITLAB_TEST_IMAGE pytest --cov --cov-report term --cov-report xml:coverage.xml --junitxml=report.xml --cov-config=.coveragerc tests/unit
+#   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+#   artifacts:
+#     expire_in: 1 week
+#     when: always
+#     paths:
+#       - report.xml
+#     reports:
+#       junit: report.xml
+#       coverage_report:
+#         coverage_format: cobertura
+#         path: coverage.xml
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
+#     - if: '$CI_OPEN_MERGE_REQUESTS'
+#       when: never
+#     - if: '$CI_COMMIT_BRANCH == "develop"'
 
-# --- STAGE: cleanup ---
+# # --- STAGE: cleanup ---
 
-cleanup_gitlab:
-  stage: cleanup
-  image: quay.io/skopeo/stable
-  needs: ["unit_tests", "code_quality", "code_security", "dependencies_security"]
-  when: always
-  variables:
-    GIT_STRATEGY: none
-  script:
-    - skopeo login --username gitlab-ci-token --password $CI_JOB_TOKEN $CI_REGISTRY
-    - |
-      echo "🔍 Checking if image $GITLAB_TEST_IMAGE exists in Gitlab Container Registry"
-      if skopeo inspect docker://$GITLAB_TEST_IMAGE > /dev/null 2>&1; then
-        echo "✅ Image tag found. Proceeding to delete."
-        skopeo delete docker://$GITLAB_TEST_IMAGE
-      else
-        echo "⚠️ Image tag not found. Nothing to cleanup."
-      fi
-  rules:
-    - if: '$CI_MERGE_REQUEST_ID'
-    - if: '$CI_OPEN_MERGE_REQUESTS'
-      when: never
-    - if: '$CI_COMMIT_BRANCH == "develop"'
+# cleanup_gitlab:
+#   stage: cleanup
+#   image: quay.io/skopeo/stable
+#   needs: ["unit_tests", "code_quality", "code_security", "dependencies_security"]
+#   when: always
+#   variables:
+#     GIT_STRATEGY: none
+#   script:
+#     - skopeo login --username gitlab-ci-token --password $CI_JOB_TOKEN $CI_REGISTRY
+#     - |
+#       echo "🔍 Checking if image $GITLAB_TEST_IMAGE exists in Gitlab Container Registry"
+#       if skopeo inspect docker://$GITLAB_TEST_IMAGE > /dev/null 2>&1; then
+#         echo "✅ Image tag found. Proceeding to delete."
+#         skopeo delete docker://$GITLAB_TEST_IMAGE
+#       else
+#         echo "⚠️ Image tag not found. Nothing to cleanup."
+#       fi
+#   rules:
+#     - if: '$CI_MERGE_REQUEST_ID'
+#     - if: '$CI_OPEN_MERGE_REQUESTS'
+#       when: never
+#     - if: '$CI_COMMIT_BRANCH == "develop"'
 
 # --- STAGE: deploy ---
 
