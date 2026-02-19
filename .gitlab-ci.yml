@@ -67,7 +67,7 @@ prepare_test_image:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
 
 # --- STAGE: analysis ---
 
@@ -89,7 +89,7 @@ code_quality:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
 
 code_security:
   stage: analysis
@@ -104,7 +104,7 @@ code_security:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
 
 dependencies_security:
   stage: analysis
@@ -119,7 +119,7 @@ dependencies_security:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
   allow_failure: true
 
 # --- STAGE: testing ---
@@ -148,7 +148,7 @@ unit_tests:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
 
 # --- STAGE: cleanup ---
 
@@ -173,7 +173,7 @@ cleanup_gitlab:
     - if: '$CI_MERGE_REQUEST_ID'
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
-    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "develop"'
 
 # --- STAGE: deploy ---
 
