@@ -1,3 +1,4 @@
+import os
 from typing import Any
 
 from owlready2 import (
@@ -9,6 +10,9 @@ from owlready2 import (
 )
 from owlready2.class_construct import And, Or, Restriction
 from owlready2.entity import ThingClass
+from gql import Client
+from gql.transport.aiohttp import AIOHTTPTransport
+import segittur_commons.app.entities.graphql_models as models
 
 from segittur_commons.config.global_context import DEFAULT_LLM_LANGUAGE_ID
 
@@ -91,7 +95,8 @@ class OWLParser:
         results = {}
         for cls in classes:
             # Using cls.name as the key for better readability and serialization.
-            results[cls.name] = self.get_all_properties_for_class(cls)
+            schema = self.get_all_properties_for_class(cls)
+            results[cls.name] = {"properties": schema["properties"], "$defs": schema['$defs']}
         return results
 
     def get_subclasses(self, ontology_class: ThingClass) -> set[ThingClass] | Any:
@@ -209,57 +214,5 @@ class OWLParser:
         return schema
 
     def get_all_properties_for_class(self, cls: ThingClass) -> set[PropertyClass]:
-        """
-        Retrieves all properties for a single ontology class by inspecting
-        both its restrictions and the `rdfs:domain` of all properties.
-
-        This function handles:
-        - Class hierarchies (inheritance).
-        - Complex domain definitions, such as `owl:unionOf`.
-
-        Args:
-            cls: An owlready2 class (e.g., onto.Hotel).
-
-        Returns:
-            A set of unique owlready2 property objects associated with the class.
-        """
-        all_properties: set[PropertyClass] = set()
-
-        # 1. Get the class and all its ancestors to check for inherited properties.
-        class_and_ancestors = set(cls.mro())
-
-        # 2. Gather properties from class restrictions.
-        for entity in class_and_ancestors:
-            # `is_a` contains superclasses and restrictions.
-            if hasattr(entity, "is_a"):
-                for restriction in entity.is_a:
-                    if isinstance(restriction, Restriction):
-                        all_properties.add(restriction.property)
-
-        # 3. Gather properties from `rdfs:domain` definitions by checking all properties.
-        for prop in self._all_ontology_properties:
-            if not hasattr(prop, "domain") or not prop.domain:
-                continue
-
-            # A property can have multiple domain axioms. We check each one.
-            for domain_expression in prop.domain:
-                # Case A: The domain is a simple, named class (e.g., core.Hotel).
-                if isinstance(domain_expression, ThingClass):
-                    if domain_expression in class_and_ancestors:
-                        all_properties.add(prop)
-                        break  # Property found, move to the next property.
-
-                # Case B: The domain is a complex class expression (e.g., owl:unionOf).
-                # owlready2 parses `owl:unionOf` as `Or`.
-                elif isinstance(domain_expression, Or):
-                    # Check if any class in the union is one of our target classes or their ancestors.
-                    for class_in_union in domain_expression.Classes:
-                        if (
-                            isinstance(class_in_union, ThingClass)
-                            and class_in_union in class_and_ancestors
-                        ):
-                            all_properties.add(prop)
-                            break
-                    break  # This `break` belongs to the outer `for`
-
-        return all_properties
+        schema = getattr(models, cls.name).model_json_schema()
+        return schema
