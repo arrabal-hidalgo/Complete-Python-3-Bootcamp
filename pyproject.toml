@@ -22,6 +22,7 @@ dependencies = [
     "minio (==7.2.18)",
     "pycasbin (>=1.4.0,<2.0.0)",
     "python-keycloak (>=5.8.1,<5.9.0)",
+    "pymilvus (==2.6.9)",
     "pyyaml (>=6.0.2,<6.1.0)",
     "graypy (>=2.1.0,<2.2.0)",
     "arcgis (>=2.4.1)",
