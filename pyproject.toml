@@ -1,6 +1,6 @@
 [project]
 name = "segittur-commons"
-version = "0.4.1-rc1"
+version = "0.4.1-rc3"
 description = "Segittur-Commons is a Python package that provides common utilities and components for SEGITTUR projects."
 authors = [
   { name = "Alejandro Arrabal Hidalgo", email = "alejandro.arrabal@sngular.com" },
@@ -25,15 +25,17 @@ dependencies = [
     "pymilvus (==2.6.9)",
     "pyyaml (>=6.0.2,<6.1.0)",
     "graypy (>=2.1.0,<2.2.0)",
-    "arcgis (>=2.4.1)",
+    "arcgis (==2.4.1)",
     "geojson-pydantic (>=2.1.0)",
-    "datamodel-code-generator (==0.55.0)"
+    "datamodel-code-generator (==0.55.0)",
+    "gql[requests] (==4.0.0)"
 ]
 
 [tool.poetry]
 name = "segittur-commons"
 package-mode = true
 packages = [{ include = "segittur_commons" }]
+
 
 [tool.poetry.group.dev.dependencies]
 black = "*"
